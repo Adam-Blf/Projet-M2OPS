@@ -116,7 +116,7 @@ machine, sans budget, et qui se teste.
 |---|---|---|
 | Langage | Python 3.12 | Écosystème data et parsing le plus direct, lisible par les deux membres |
 | Collecte | httpx et feedparser | HTTP explicite avec délais et en-têtes maîtrisés, parsing RSS tolérant |
-| Stockage brut | MongoDB | Un document JSON par article, tel que publié, et un index unique sur l'URL canonique : la déduplication est tenue par la base, pas par le code |
+| Stockage | MongoDB, `articles_bruts` puis `articles_propres` | Un document JSON par article tel que publié, puis une collection nettoyée, et un index unique sur l'URL canonique : la déduplication est tenue par la base, pas par le code |
 | Requêtes | DuckDB | Analyse SQL en colonnes sans serveur, sur l'export Parquet des documents du jour ; DuckDB ne lit pas MongoDB directement, l'export est une étape assumée du pipeline |
 | Qualité | Polars et pytest | Transformations rapides et contrôles exécutables en CI |
 | Thèmes | TF-IDF et KMeans (scikit-learn) | Déterministe, réglable, sans modèle à télécharger ni GPU |
