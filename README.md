@@ -34,8 +34,8 @@ génération de résumé par LLM, aucun scraping du texte intégral.
 Les supports de cours sont publiés par l'équipe pédagogique sur
 [slides.rempart.dev/m2ops-module](https://slides.rempart.dev/m2ops-module/),
 sur mot de passe fourni en séance. Une copie locale du deck et les PDF du module
-sont rangés à côté du dépôt, dans `M2OPS-supports/`, pour que le dépôt ne
-contienne que le projet. Ce sont des documents de cours, pas des livrables de
+sont rangés à côté du dépôt, dans `../supports/`, pour que le dépôt ne contienne
+que le projet. Ce sont des documents de cours, pas des livrables de
 l'équipe : ils ne sont pas publiés.
 
 ## Structure
