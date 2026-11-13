@@ -137,6 +137,33 @@ Le détail des flux, des volumes et de l'hébergage de chaque brique est dans
 | [docs/architecture.md](docs/architecture.md) | Les six boîtes et la branche modèle, ce qui circule entre elles, où ça tourne, ce que chaque TD ajoute |
 | [sources.csv](sources.csv) | 85 flux vérifiés à la main, 64 PQR et 21 PQN, avec accès, conditions et fréquence mesurée |
 
+---
+
+## Route map des TD à venir
+
+Le module s'étend sur 10 séances, du TD 1 au TD 10. Voici le programme prévisionnel :
+
+| TD | Séance | Livrable clé | Boîte du pipeline |
+|---|---|---|---|
+| **TD 3** | ven. 30 nov. 09h10–12h40 | Collecte planifiée tourne seule, `articles_bruts` remplis | Collecte, stockage |
+| **TD 3** | ven. 30 nov. 13h40–17h10 | Compléments collecte | |
+| **TD 4** | lun. 1 déc. 09h10–12h40 | Règles d'exclusion, `articles_propres`, rapport qualité | Qualité |
+| **TD 4** | lun. 1 déc. 13h40–17h10 | Compléments qualité | |
+| **TD 5** | mar. 1 déc. 09h10–12h40 | Script regroupement reproductible, run tracé | Thèmes, registre |
+| **TD 5** | mar. 1 déc. 13h40–17h10 | Compléments thèmes | |
+| **TD 6** | mer. 10 févr. 09h10–12h40 | Évaluation automatique, seuils, registre versions | Registre, service |
+| **TD 6** | mer. 10 févr. 13h40–17h10 | Retour arrière testé, fiche modèle | |
+| **TD 7** | lun. 18 janv. 09h10–12h40 | Édition de 7 h, publication autonome | Livraison |
+| **TD 7** | lun. 18 janv. 13h40–17h10 | Contrôles en sortie, archive, journal de bord | |
+| **TD 8** | mar. 10 févr. 13h40–17h10 | Tableau de bord, 2 alertes min, runbook, sauvegarde | Supervision |
+| **TD 9** | mer. 10 févr. 09h10–12h40 | Infrastructure en code, secrets hors dépôt, reconstruction zéro | Infrastructure |
+| **TD 9** | mer. 10 févr. 13h40–17h10 | Compléments infrastructure | |
+| **TD 10** | mer. 10 févr. 09h10–12h40 | Rapport technique, démo bout en bout, soutenance | Toutes |
+
+Chaque TD ajoute une ou deux boîtes au pipeline global des six. Le livrable final (TD 10) est un pipeline qui tourne seul chaque matin, observé, reproductible et reconstruisable de zéro.
+
+---
+
 ## Couverture des sources
 
 Le fichier [sources.csv](sources.csv) tient en six colonnes : nom, type, region,
