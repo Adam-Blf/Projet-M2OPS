@@ -7,7 +7,7 @@ deux.
 ```mermaid
 flowchart LR
   S1["1. Collecte des flux<br/>un connecteur RSS par titre"]
-  S2["2. Stockage brut<br/>MongoDB, documents horodatés"]
+  S2["2. Stockage brut<br/>PostgreSQL, tables `articles_brutes` (JSONB)"
   S3["3. Nettoyage et contrôle qualité<br/>contrôles DuckDB, champs requis"]
   S4["4. Regroupement par thèmes (automatique)"]
   M1["Registre de modèles<br/>MLflow, versions et métriques"]
@@ -45,8 +45,8 @@ flowchart LR
 
 | De | Vers | Charge | Volume attendu |
 |---|---|---|---|
-| Collecte | MongoDB, `articles_bruts` | Un document par article : titre, extrait, lien, date, titre de presse, rubrique | Quelques centaines à quelques milliers de documents par jour |
-| MongoDB, `articles_propres` | Qualité | Export Parquet du jour, relu par DuckDB | Un fichier par jour et par source |
+| Collecte | PostgreSQL, `articles_brutes` | Un document par article : titre, extrait, lien, date, titre de presse, rubrique | Quelques centaines à quelques milliers de documents par jour |
+| PostgreSQL, `articles_propres` | Qualité | Export Parquet du jour, relu par DuckDB | Un fichier par jour et par source |
 | Qualité | Thèmes | Articles retenus, texte normalisé pour la similarité | Deux tiers du brut environ, doublons et anciens retirés |
 | Thèmes | Registre | Matrice TF‑IDF, KMeans (choix k par élbo sur silhouette), hyperparamètres, métriques de cohésion | Un run par entraînement, quelques dizaines par semaine |
 | Registre | Livraison | Version du modèle qui a produit l'édition, ses métriques | Une version par jour |
@@ -54,7 +54,7 @@ flowchart LR
 | Thèmes | Livraison | Thèmes, articles rattachés, compteurs par titre de presse | Une dizaine de thèmes par jour |
 | Toutes | Supervision | Compteurs, durées, erreurs par source, logs structurés | Un enregistrement par étape et par exécution |
 
-DuckDB ne lit pas MongoDB directement : l'export en Parquet est une étape du
+DuckDB ne lit pas PostgreSQL directement : l'export en Parquet est une étape du
 pipeline, assumée et décrite, pas un contournement. Elle sert deux fois, pour les
 contrôles qualité et pour les agrégats qui nourrissent l'édition.
 
@@ -63,7 +63,7 @@ contrôles qualité et pour les agrégats qui nourrissent l'édition.
 | Brique | Où | Quand |
 |---|---|---|
 | Collecte, qualité, thèmes, livraison | Conteneurs Podman sur une machine de l'équipe, ordonnancés par un CronJob Kubernetes local (kind ou minikube) | Chaque nuit, CronJob à 2 h, édition prête avant 7 h |
-| MongoDB | Conteneur Podman, volume persistant | En continu |
+| PostgreSQL | Conteneur Podman, volume persistant | En continu |
 | MLflow, suivi et registre | Conteneur Podman, backend fichier sur volume, base de suivi sauvegardée | À chaque entraînement |
 | Service du modèle | Deployment Kubernetes, image épinglée sur la version du jour | En continu, redémarré à chaque nouvelle version |
 | Export et éditions | Volume persistant, un dossier par jour | À chaque exécution |
@@ -99,7 +99,7 @@ livrable d'une séance est commité avant la suivante.
 
 1. **Un connecteur par titre de presse**, pas un collecteur générique : un flux
    qui casse ne doit emporter que sa source.
-2. **Le brut n'est jamais modifié.** MongoDB garde le document tel que publié
+2. **Le brut n'est jamais modifié.** PostgreSQL garde le document tel que publié
    dans `articles_bruts`, et le nettoyage écrit dans `articles_propres`, une
    collection distincte : une édition passée reste rejouable à l'identique, et
    une règle d'exclusion se rejoue sur l'historique sans rien recollecter.

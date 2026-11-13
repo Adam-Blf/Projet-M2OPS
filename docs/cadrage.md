@@ -48,6 +48,16 @@ où lire la suite.
 | Zéro donnée personnelle | Aucune collecte au-delà des champs de l'article |
 | Reproductibilité | Tout ce qui tourne est décrit dans le dépôt, y compris l'ordonnancement |
 
+## Stockage
+| Stockage | PostgreSQL, tables `articles_brutes` et `articles_propres` (JSONB) | Contrainte | Export Parquet |
+|---|---|---|---|
+| **Forme** | Chaque article est une ligne JSONB (titre, extrait, lien, date, titre de presse, rubrique) | Index UNIQUE sur `url_canonique` : la déduplication est tenue par la base SQL, pas par le code | `COPY ... TO "articles_YYYYMMDD.parquet" (FORMAT parquet) : tout ou rien, pas de lignes manquantes |
+| **Volume attendu** | Quelques centaines à quelques milliers de lignes par jour | L'index UNIQUE empêche les doublons, VACUUM garde le tableau sous contrôle | Export atomique : le fichier Parquet contient exactement les lignes du jour |
+| **Risques atténués** | Pas de serveur MongoDB qui "grosse" en mémoire | Contrainte UNIQUE + VACUUM prévient la croissance inattendue | Pas de décalage entre le compte de lignes et le nombre de documents |
+
+**Mémoire de la base** : PostgreSQL alloue selon les besoins réels ; `VACUUM` et `ANALYZE` tournent automatiquement dans le conteneur, pas de surprise "mémoire qui grandit". La limite de RAM dans le manifeste K8s (512 Mi par défaut) suffit à contenir le tableau de la journée.
+
+**Export Parquet incomplet** : `COPY TO` est une opération atomique : soit tout le jeu de lignes est écrit, soit l'opération échoue et aucun fichier n'est créé. La contrainte UNIQUE sur `url_canonique` garantit qu'aucun article n'apparait deux fois, et un contrôle en fin de pipeline compare `SELECT count(*) FROM articles_propres` au nombre de lignes du fichier Parquet produit ; échec explicite si écart > 0 (pas de tolérance, c'est la garantie "tout ou rien").
 ## La matière, et ce qu'on a le droit d'en faire
 
 La veille de la séance a donné un résultat net, et il oriente l'architecture.

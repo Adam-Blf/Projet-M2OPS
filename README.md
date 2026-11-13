@@ -33,7 +33,7 @@ séances du module mènent à un ensemble qui tourne seul, chaque matin.
 ```mermaid
 flowchart LR
   S1["Collecte des flux<br/>un connecteur par titre"]
-  S2["Stockage brut<br/>MongoDB, documents datés"]
+  S2["Stockage brut<br/>PostgreSQL, tables `articles_brutes` (JSONB)"
   S3["Nettoyage et qualité<br/>contrôles DuckDB, déduplication"]
   S4["Regroupement par thèmes<br/>TF-IDF, KMeans, registre MLflow"]
   S5["Livraison de l'édition<br/>Markdown et JSON, 7 h"]
@@ -61,7 +61,7 @@ flowchart LR
   class S6 error
 ```
 
-Les articles bruts sont stockés dans MongoDB, un document par article, avec un
+Les articles bruts sont stockés dans PostgreSQL, un document par article, avec un
 index unique sur l'URL canonique pour que la déduplication soit tenue par la base.
 Les contrôles qualité et les agrégats de l'édition passent par DuckDB, sur un
 export Parquet daté. Chaque entraînement est tracé dans MLflow, qui garde les
