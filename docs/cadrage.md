@@ -120,12 +120,14 @@ machine, sans budget, et qui se teste.
 | Requêtes | DuckDB | Analyse SQL en colonnes sans serveur, sur l'export Parquet des documents du jour ; DuckDB ne lit pas MongoDB directement, l'export est une étape assumée du pipeline |
 | Qualité | Polars et pytest | Transformations rapides et contrôles exécutables en CI |
 | Thèmes | TF-IDF et KMeans (scikit-learn) | Déterministe, réglable, sans modèle à télécharger ni GPU |
+| Suivi du modèle | MLflow, suivi d'expériences et registre | Chaque entraînement laisse une trace relisible : hyperparamètres, métriques, version retenue, et l'édition cite celle qui l'a produite |
+| Service du modèle | FastAPI et joblib, en conteneur | Le modèle versionné est servi derrière une route HTTP, image épinglée sur la version du jour, jamais sur `latest` |
 | Livraison | Markdown et JSON datés | Lisible par un humain, consommable par la supervision |
 | Ordonnancement | CronJob Kubernetes | L'heure de 7 h est décrite dans un manifeste versionné, pas dans une crontab de machine |
-| CI/CD | GitHub Actions | Gratuit sur dépôt public, déjà lié au dépôt |
+| CI/CD | GitHub Actions, images sur GHCR | Gratuit sur dépôt public, tests et couverture obligatoires avant fusion, analyse d'image avant poussée |
 | Conteneurs | Podman puis Kubernetes | Podman construit et exécute sans démon root, `podman generate kube` donne les manifestes, kind ou minikube fournit l'ordonnancement en local |
-| Supervision | Logs JSON, healthcheck, puis Prometheus et Grafana | Commence sans dépendance, s'étend quand le besoin est prouvé |
-| Infrastructure | Terraform et Ansible en TD 6 | Décrire plutôt que cliquer, rejouable et relisible |
+| Supervision | Prometheus, Grafana, Loki et Alertmanager | Métriques, logs centralisés et alertes : l'absence d'édition est une alerte, pas un silence |
+| Infrastructure | Terraform et Ansible, consolidés au TD 9 | Décrire plutôt que cliquer, rejouable et relisible |
 
 ## Alternatives écartées, et pourquoi
 
@@ -141,6 +143,8 @@ machine, sans budget, et qui se teste.
 | SQLite seul | Suffisant pour la collecte, faible pour relire des colonnes et rejouer une journée |
 | Google News comme source unique | Un seul point de défaillance, et on perdrait la lecture directe des titres qui l'autorisent |
 | n8n ou équivalent no-code | Peu testable, peu versionnable, et la grille regarde la CI/CD |
+| Notebook seul, modèle en fichier local | Aucune traçabilité : impossible de dire quelle version a produit quelle édition, ni de comparer deux entraînements |
+| Plateforme de suivi hébergée (W&B ou équivalent) | Budget zéro, et les données de presse n'ont pas à sortir de la machine de l'équipe pour un suivi d'expériences |
 
 ## Risques
 
@@ -155,6 +159,8 @@ machine, sans budget, et qui se teste.
 | Panne silencieuse la nuit | Aucune édition, personne prévenu | Alerte sur absence d'édition, pas seulement sur erreur |
 | Base gourmande en mémoire | Machine saturée, collecte arrêtée | Limites mémoire et CPU dans les manifestes, volume plafonné, purge du brut au-delà de trente jours |
 | Export Parquet incomplet | Contrôles qualité faux | Compte des documents de la collection comparé au nombre de lignes de l'export, échec explicite si l'écart dépasse le seuil |
+| Registre de modèles perdu | Impossible de rejouer une édition passée | Artefacts sur volume sauvegardé, export hebdomadaire du registre, version citée dans chaque édition |
+| Service et édition sur deux versions | Étiquettes incohérentes entre l'API et la gazette | Une seule version retenue par jour, épinglée dans le manifeste du service et dans l'édition |
 
 ## Rôles
 

@@ -27,17 +27,17 @@ extrait, un lien et une date.
 
 ## Architecture
 
-Le pipeline tient en six boîtes. Chaque TD en construit une ou deux, la fin du
-module fait tourner l'ensemble seul, chaque matin.
+Le pipeline tient en six boîtes. Chaque TD en construit une ou deux, et les dix
+séances du module mènent à un ensemble qui tourne seul, chaque matin.
 
 ```mermaid
 flowchart LR
   S1["Collecte des flux<br/>un connecteur par titre"]
   S2["Stockage brut<br/>MongoDB, documents datés"]
   S3["Nettoyage et qualité<br/>contrôles DuckDB, déduplication"]
-  S4["Regroupement par thèmes<br/>TF-IDF puis KMeans"]
+  S4["Regroupement par thèmes<br/>TF-IDF, KMeans, registre MLflow"]
   S5["Livraison de l'édition<br/>Markdown et JSON, 7 h"]
-  S6["Supervision<br/>logs, métriques, alerte"]
+  S6["Supervision<br/>Prometheus, Grafana, Loki"]
 
   S1 -->|articles bruts| S2
   S2 -->|lots du jour| S3
@@ -64,8 +64,11 @@ flowchart LR
 Les articles bruts sont stockés dans MongoDB, un document par article, avec un
 index unique sur l'URL canonique pour que la déduplication soit tenue par la base.
 Les contrôles qualité et les agrégats de l'édition passent par DuckDB, sur un
-export Parquet daté. Les traitements tournent en conteneurs Podman, ordonnancés
-par un CronJob Kubernetes local.
+export Parquet daté. Chaque entraînement est tracé dans MLflow, qui garde les
+hyperparamètres, les métriques et la version du modèle, et cette version est
+servie par une API FastAPI en conteneur. Les traitements tournent en conteneurs
+Podman, ordonnancés par un CronJob Kubernetes local, et la supervision passe par
+Prometheus, Grafana et Loki.
 
 Le détail des flux, des volumes et de l'hébergement de chaque brique est dans
 [docs/architecture.md](docs/architecture.md).
@@ -75,7 +78,7 @@ Le détail des flux, des volumes et de l'hébergement de chaque brique est dans
 | Fichier | Contenu |
 |---|---|
 | [docs/cadrage.md](docs/cadrage.md) | Besoin reformulé, périmètre, contraintes, stack retenue et alternatives écartées, risques, rôles |
-| [docs/architecture.md](docs/architecture.md) | Les six boîtes, ce qui circule entre elles, où ça tourne |
+| [docs/architecture.md](docs/architecture.md) | Les six boîtes et la branche modèle, ce qui circule entre elles, où ça tourne, ce que chaque TD ajoute |
 | [sources.csv](sources.csv) | 85 flux vérifiés à la main, 64 PQR et 21 PQN, avec accès, conditions et fréquence mesurée |
 
 ## Couverture des sources
