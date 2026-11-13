@@ -45,8 +45,8 @@ flowchart LR
 
 | De | Vers | Charge | Volume attendu |
 |---|---|---|---|
-| Collecte | MongoDB | Un document par article : titre, extrait, lien, date, titre de presse, rubrique | Quelques centaines à quelques milliers de documents par jour |
-| MongoDB | Qualité | Export Parquet du jour, relu par DuckDB | Un fichier par jour et par source |
+| Collecte | MongoDB, `articles_bruts` | Un document par article : titre, extrait, lien, date, titre de presse, rubrique | Quelques centaines à quelques milliers de documents par jour |
+| MongoDB, `articles_propres` | Qualité | Export Parquet du jour, relu par DuckDB | Un fichier par jour et par source |
 | Qualité | Thèmes | Articles retenus, texte normalisé pour la similarité | Deux tiers du brut environ, doublons et anciens retirés |
 | Thèmes | Registre | Matrice TF-IDF, modèle KMeans, hyperparamètres, métriques de cohésion | Un run par entraînement, quelques dizaines par semaine |
 | Registre | Livraison | Version du modèle qui a produit l'édition, ses métriques | Une version par jour |
@@ -78,29 +78,31 @@ l'heure de 7 h est versionné.
 
 ## Ce que chaque TD ajoute
 
-Dix séances, et chaque brique de ce schéma arrive dans l'une d'elles.
+Dix séances, et chaque brique de ce schéma arrive dans l'une d'elles. Le
+livrable d'une séance est commité avant la suivante.
 
-| TD | Boîtes couvertes | Compétences visées |
-|---|---|---|
-| TD 1 | Cadrage, sources vérifiées, schéma (ce document) | C7.1 |
-| TD 2 | Dépôt, conteneurs Podman, premiers manifestes, première CI, aucun flux encore | C7.1, C7.2, C8.2 |
-| TD 3 | Collecte des flux et stockage MongoDB | C7.1, C7.3 |
-| TD 4 | Nettoyage, contrôles DuckDB et premiers agrégats | C7.3 |
-| TD 5 | Regroupement par thèmes, suivi d'expériences MLflow, registre | C7.4 |
-| TD 6 | Évaluation, versionnement et déploiement du modèle, service FastAPI en Deployment | C7.2, C7.4 |
-| TD 7 | Édition de 7 h, chaîne complète déclenchée par le CronJob | C7.1, C7.2, C7.3 |
-| TD 8 | Supervision Prometheus, Grafana et Loki, alertes, administration | C8.1 |
-| TD 9 | Infrastructure en code consolidée, Terraform et Ansible, déploiement rejouable | C8.1, C8.2 |
-| TD 10 | Consolidation, rapport technique et soutenance avec démo depuis la production | Toutes |
-| Fin de module | Les dix séances passées, le pipeline tourne seul chaque matin, observé et reproductible | |
+| TD | Livrable attendu | Boîtes couvertes | Compétences |
+|---|---|---|---|
+| TD 1 | La note de cadrage, ce schéma et `sources.csv` dans le dépôt | Cadrage | C7.1 |
+| TD 2 | Un push déclenche une CI verte (lint, tests, build) qui publie une image, et le README lance le projet en deux commandes | Socle | C7.1, C7.2, C8.2 |
+| TD 3 | La collecte planifiée tourne seule et remplit `articles_bruts`, la table des sources dit l'état de chacune | Collecte, stockage | C7.1, C7.3 |
+| TD 4 | Les règles d'exclusion documentées et testées, `articles_propres` alimentée, le rapport de qualité produit à chaque passage | Qualité | C7.3 |
+| TD 5 | Un script de regroupement reproductible, chaque run tracé (données, paramètres, métriques, artefacts), les thèmes du jour en base | Thèmes, registre | C7.4 |
+| TD 6 | L'évaluation automatique avec seuils dans le pipeline, un registre de versions, un retour arrière testé, la fiche modèle | Registre, service | C7.2, C7.4 |
+| TD 7 | Chaque matin à 7 h, l'édition du jour publiée sans geste humain, avec ses contrôles en sortie et son archive, journal de bord ouvert | Livraison | C7.1, C7.2, C7.3 |
+| TD 8 | Un tableau de bord (la gazette, la machine, le modèle), deux alertes au moins, un runbook d'incident, une sauvegarde restaurée | Supervision | C8.1 |
+| TD 9 | Toute l'infrastructure décrite en code versionné, les secrets hors du dépôt, une reconstruction de zéro démontrée et chronométrée | Infrastructure | C8.1, C8.2 |
+| TD 10 | Le rapport technique remis 48 h avant, la démo de bout en bout, la soutenance | Toutes | Toutes |
+| Fin de module | Le pipeline tourne seul chaque matin, observé, reproductible et reconstruisable de zéro | | |
 
 ## Décisions structurantes
 
 1. **Un connecteur par titre de presse**, pas un collecteur générique : un flux
    qui casse ne doit emporter que sa source.
-2. **Le brut n'est jamais modifié.** MongoDB conserve le document tel que publié,
-   et le nettoyage produit une collection distincte : une édition passée reste
-   rejouable à l'identique.
+2. **Le brut n'est jamais modifié.** MongoDB garde le document tel que publié
+   dans `articles_bruts`, et le nettoyage écrit dans `articles_propres`, une
+   collection distincte : une édition passée reste rejouable à l'identique, et
+   une règle d'exclusion se rejoue sur l'historique sans rien recollecter.
 3. **La déduplication est tenue par la base**, par un index unique sur l'URL
    canonique, pas par une comparaison en mémoire qui dépendrait de l'ordre
    d'arrivée.
