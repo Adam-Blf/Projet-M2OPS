@@ -116,14 +116,14 @@ machine, sans budget, et qui se teste.
 |---|---|---|
 | Langage | Python 3.12 | Écosystème data et parsing le plus direct, lisible par les deux membres |
 | Collecte | httpx et feedparser | HTTP explicite avec délais et en-têtes maîtrisés, parsing RSS tolérant |
-| Stockage brut | Parquet sur volume Docker | Colonnes et compression, relisible sans base, versionnable par date |
-| Requêtes | DuckDB | Lecture directe du Parquet, aucun serveur à administrer |
+| Stockage brut | MongoDB | Un document JSON par article, tel que publié, et un index unique sur l'URL canonique : la déduplication est tenue par la base, pas par le code |
+| Requêtes | DuckDB | Analyse SQL en colonnes sans serveur, sur l'export Parquet des documents du jour ; DuckDB ne lit pas MongoDB directement, l'export est une étape assumée du pipeline |
 | Qualité | Polars et pytest | Transformations rapides et contrôles exécutables en CI |
 | Thèmes | TF-IDF et KMeans (scikit-learn) | Déterministe, réglable, sans modèle à télécharger ni GPU |
 | Livraison | Markdown et JSON datés | Lisible par un humain, consommable par la supervision |
-| Ordonnancement | cron dans un conteneur dédié | Le plus simple qui garantit l'heure de 7 h |
+| Ordonnancement | CronJob Kubernetes | L'heure de 7 h est décrite dans un manifeste versionné, pas dans une crontab de machine |
 | CI/CD | GitHub Actions | Gratuit sur dépôt public, déjà lié au dépôt |
-| Conteneurs | Docker et Docker Compose | Socle du TD 2, portable vers Kubernetes en TD 4 |
+| Conteneurs | Podman puis Kubernetes | Podman construit et exécute sans démon root, `podman generate kube` donne les manifestes, kind ou minikube fournit l'ordonnancement en local |
 | Supervision | Logs JSON, healthcheck, puis Prometheus et Grafana | Commence sans dépendance, s'étend quand le besoin est prouvé |
 | Infrastructure | Terraform et Ansible en TD 6 | Décrire plutôt que cliquer, rejouable et relisible |
 
@@ -132,7 +132,10 @@ machine, sans budget, et qui se teste.
 | Alternative | Écartée parce que |
 |---|---|
 | Airflow | Un planificateur complet à administrer pour cinq tâches quotidiennes : le coût de panne dépasse le service rendu |
-| Kubernetes dès le TD 1 | Trois semaines avant d'avoir un flux qui tourne, et rien à observer encore |
+| Kubernetes complet dès le TD 1 | Un cluster complet pour cinq tâches quotidiennes : on garde le CronJob et les manifestes, pas l'ingénierie de plateforme |
+| Docker et Docker Compose | Démon root et socket exposé pour un besoin que Podman couvre sans privilège, et la conversion en manifestes Kubernetes est directe |
+| Parquet seul comme stockage brut | Pas de déduplication native ni d'index, et relire un document précis oblige à balayer des fichiers |
+| PostgreSQL | Modèle relationnel rigide pour des flux dont les champs changent d'un éditeur à l'autre, et un serveur de plus à tenir |
 | Scraping HTML du texte intégral | Contraire aux conditions des éditeurs, et le sujet est le thème du jour, pas l'article |
 | Résumé par LLM | Hors périmètre annoncé, coût et non-déterminisme, et le pipeline doit rester rejouable à l'identique |
 | SQLite seul | Suffisant pour la collecte, faible pour relire des colonnes et rejouer une journée |
@@ -150,6 +153,8 @@ machine, sans budget, et qui se teste.
 | Dérive du regroupement | Thèmes incohérents d'un jour à l'autre | Graine fixe, nombre de thèmes borné, relecture manuelle en début de module |
 | Interprétation juridique des extraits | Reproche d'un éditeur | Extraits très courts, attribution et lien systématiques, retrait sur demande |
 | Panne silencieuse la nuit | Aucune édition, personne prévenu | Alerte sur absence d'édition, pas seulement sur erreur |
+| Base gourmande en mémoire | Machine saturée, collecte arrêtée | Limites mémoire et CPU dans les manifestes, volume plafonné, purge du brut au-delà de trente jours |
+| Export Parquet incomplet | Contrôles qualité faux | Compte des documents de la collection comparé au nombre de lignes de l'export, échec explicite si l'écart dépasse le seuil |
 
 ## Rôles
 
@@ -159,8 +164,8 @@ machine, sans budget, et qui se teste.
 | Emilien | Qualité des données, stockage, regroupement par thèmes, tests |
 | Ensemble | Revue des choix, relecture de l'édition, rapport technique |
 
-Les deux membres installent Docker, Git, Python et un accès au dépôt avant le
-TD 2.
+Les deux membres installent Podman, kubectl avec kind ou minikube, Git, Python et
+un accès au dépôt avant le TD 2.
 
 ## Prochaine étape
 
