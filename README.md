@@ -3,14 +3,13 @@
 [![visites](https://hits.sh/github.com/Adam-Blf/Projet-M2OPS.svg?style=flat-square&label=visites&color=001329)](https://hits.sh/github.com/Adam-Blf/Projet-M2OPS/)
 [![last commit](https://img.shields.io/github/last-commit/Adam-Blf/Projet-M2OPS?color=D4A437&style=flat-square&label=dernier%20push)](https://github.com/Adam-Blf/Projet-M2OPS/commits)
 [![top language](https://img.shields.io/github/languages/top/Adam-Blf/Projet-M2OPS?style=flat-square)](https://github.com/Adam-Blf/Projet-M2OPS)
-[![version](https://img.shields.io/badge/version-0.1.0-D4A437?style=flat-square)](CHANGELOG.md)
 [![license](https://img.shields.io/github/license/Adam-Blf/Projet-M2OPS?style=flat-square&color=D4A437)](LICENSE)
 <!-- adam-badges:end -->
 
 # Projet M2Ops, La gazette
 
-Version 0.1.0. Projet certifiant du Bloc 3 du Mastère Data Engineering & IA de
-l'EFREI, promotion 2025-2027.
+Projet certifiant du Bloc 3 du Mastère Data Engineering & IA de l'EFREI,
+promotion 2025-2027.
 
 Binôme : **Adam Beloucif** ([Adam-Blf](https://github.com/Adam-Blf)) et
 **Emilien Morice** ([emilien754](https://github.com/emilien754)).
@@ -99,8 +98,6 @@ malgré un flux parfois valide. Le détail des listes écartées est dans
 ```
 docs/           note de cadrage et schéma d'architecture
 sources.csv     sources de presse retenues et vérifiées
-CHANGELOG.md    historique des versions
-VERSION         version courante, source de vérité
 ```
 
 Les conteneurs, la collecte et la chaîne d'intégration continue arrivent au TD 2.
