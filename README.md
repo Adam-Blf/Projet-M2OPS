@@ -1,4 +1,4 @@
-# Projet M2Ops
+# Projet M2Ops, La gazette
 
 Projet certifiant du **Bloc 3** du Mastère Data Engineering & IA de l'EFREI,
 promotion 2025-2027, module de 35 heures.
@@ -6,20 +6,47 @@ promotion 2025-2027, module de 35 heures.
 Binôme : **Adam Beloucif** ([Adam-Blf](https://github.com/Adam-Blf)) et
 **Emilien Morice** ([emilien754](https://github.com/emilien754)).
 
+## Le projet
+
+**La gazette** produit chaque matin, avant 7 h, une édition qui dit quels sujets
+occupent la presse française : les thèmes du jour, les titres qui les traitent,
+et où lire la suite. Pas un lecteur d'actualité, un radar éditorial.
+
+Le pipeline cible tient en six boîtes : collecte des flux, stockage brut,
+nettoyage et contrôle qualité, regroupement par thèmes, livraison de l'édition,
+supervision. Chaque TD en construit une ou deux, la fin du module fait tourner
+l'ensemble seul, chaque matin, observé et reproductible.
+
+Cadre posé par le module : édition à 7 h, articles de moins de 24 h, conditions
+des éditeurs respectées, aucune donnée personnelle, budget zéro, aucune
+génération de résumé par LLM, aucun scraping du texte intégral.
+
+## Livrables du TD 1, cadrage et bornage
+
+| Fichier | Contenu |
+|---|---|
+| [docs/cadrage.md](docs/cadrage.md) | Besoin reformulé, périmètre, contraintes, stack retenue et alternatives écartées, risques, rôles |
+| [docs/architecture.md](docs/architecture.md) | Les six boîtes en Mermaid, ce qui circule entre elles, où ça tourne |
+| [sources.csv](sources.csv) | Onze sources vérifiées à la main, PQR et PQN, avec accès et conditions |
+
+## Structure
+
+```
+docs/           note de cadrage et schéma d'architecture
+sources.csv     sources de presse retenues et vérifiées
+```
+
+Les conteneurs, la collecte et la CI arrivent au TD 2.
+
 ## Le module
 
 Mise en situation professionnelle centrée sur l'implémentation, l'automatisation,
 la supervision et l'optimisation du déploiement de solutions de données sur le
-cloud et on-premise.
+cloud et on-premise. Le projet mobilise Intégration et Déploiement continu,
+MLOps et DataOps, Infrastructure Orchestration et Automation, Sécurité 1 et
+Data Engineering on Cloud.
 
-Le projet mobilise les modules Intégration et Déploiement continu, MLOps et
-DataOps, Infrastructure Orchestration et Automation, Sécurité 1 et Data
-Engineering on Cloud. Le livrable attendu est une solution opérationnelle
-intégrant une stratégie d'intégration continue, des pipelines CI/CD, des
-processus automatisés de traitement et de stockage, des mécanismes MLOps, des
-outils de monitoring et des principes d'Infrastructure as Code.
-
-## Compétences évaluées
+### Compétences évaluées
 
 | Code | Compétence |
 |---|---|
@@ -30,7 +57,7 @@ outils de monitoring et des principes d'Infrastructure as Code.
 | C8.1 | Administrer et monitorer les ressources cloud et on-premise pour garantir disponibilité, sécurité, conformité et résilience |
 | C8.2 | Automatiser la gestion et le déploiement des infrastructures avec des outils d'Infrastructure as Code |
 
-## Évaluation
+### Évaluation
 
 Le module porte la **partie 2** de l'évaluation du Bloc 3, soit 25 % de la note
 du bloc.
@@ -45,27 +72,22 @@ La présentation est collective, la note est individualisée. Le rapport écrit 
 d'ordre technique et documente les choix méthodologiques, les outils utilisés et
 les résultats obtenus.
 
-## Déroulé
+### Déroulé
 
 | Étape | Contenu |
 |---|---|
-| 1. Cadrage | Contexte métier et technique, objectifs de déploiement, ressources disponibles, contraintes de sécurité et de performance, périmètre CI/CD, DataOps, MLOps et infrastructure |
-| 2. Stratégie CI/CD | Outils de gestion de versions, de tests et de déploiement, étapes build, test, validation et livraison, tests automatisés |
-| 3. Automatisation des traitements | Flux reproductibles, gestion des erreurs et des reprises, alertes, dépendances, qualité et conformité |
-| 4. MLOps | Versionnement des modèles, artefacts et jeux de données, évaluation, déploiement automatisé, supervision des performances |
-| 5. Monitoring | Indicateurs de performance, sécurité, disponibilité et conformité, ajustement des ressources, résilience |
-| 6. Infrastructure as Code | Configuration versionnée, automatisation du déploiement, cohérence entre environnements, optimisation |
-| 7. Consolidation | Vérification de la cohérence de bout en bout, incidents anticipés, limites, risques, recommandations, rapport technique |
+| 1. Cadrage | Contexte, objectifs, ressources, contraintes, périmètre CI/CD, DataOps, MLOps et infrastructure |
+| 2. Stratégie CI/CD | Gestion de versions, tests, étapes build, test, validation et livraison |
+| 3. Automatisation des traitements | Flux reproductibles, erreurs et reprises, alertes, dépendances, conformité |
+| 4. MLOps | Versionnement des modèles et artefacts, évaluation, déploiement automatisé |
+| 5. Monitoring | Indicateurs de performance, sécurité, disponibilité et conformité, résilience |
+| 6. Infrastructure as Code | Configuration versionnée, déploiement automatisé, cohérence entre environnements |
+| 7. Consolidation | Cohérence de bout en bout, risques, limites, recommandations, rapport technique |
 
 ## Outils de référence
 
 GitHub Actions, GitLab CI/CD, Docker, Kubernetes, Terraform, Ansible, MLflow,
 Airflow, Prometheus, Grafana. Conformité traitée avec le guide RGPD de la CNIL.
-
-## État du dépôt
-
-Dépôt initialisé : README et licence. Le code, l'infrastructure et le rapport
-technique arrivent au fil du module.
 
 ## Licence
 
