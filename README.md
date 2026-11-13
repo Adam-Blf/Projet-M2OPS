@@ -33,8 +33,8 @@ module fait tourner l'ensemble seul, chaque matin.
 ```mermaid
 flowchart LR
   S1["Collecte des flux<br/>un connecteur par titre"]
-  S2["Stockage brut<br/>Parquet horodaté"]
-  S3["Nettoyage et qualité<br/>déduplication, fraîcheur"]
+  S2["Stockage brut<br/>MongoDB, documents datés"]
+  S3["Nettoyage et qualité<br/>contrôles DuckDB, déduplication"]
   S4["Regroupement par thèmes<br/>TF-IDF puis KMeans"]
   S5["Livraison de l'édition<br/>Markdown et JSON, 7 h"]
   S6["Supervision<br/>logs, métriques, alerte"]
@@ -60,6 +60,12 @@ flowchart LR
   class S5 ok
   class S6 error
 ```
+
+Les articles bruts sont stockés dans MongoDB, un document par article, avec un
+index unique sur l'URL canonique pour que la déduplication soit tenue par la base.
+Les contrôles qualité et les agrégats de l'édition passent par DuckDB, sur un
+export Parquet daté. Les traitements tournent en conteneurs Podman, ordonnancés
+par un CronJob Kubernetes local.
 
 Le détail des flux, des volumes et de l'hébergement de chaque brique est dans
 [docs/architecture.md](docs/architecture.md).
