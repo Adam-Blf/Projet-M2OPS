@@ -29,11 +29,20 @@ génération de résumé par LLM, aucun scraping du texte intégral.
 | [docs/architecture.md](docs/architecture.md) | Les six boîtes en Mermaid, ce qui circule entre elles, où ça tourne |
 | [sources.csv](sources.csv) | Onze sources vérifiées à la main, PQR et PQN, avec accès et conditions |
 
+## Supports du module
+
+Les supports de cours sont publiés par l'équipe pédagogique sur
+[slides.rempart.dev/m2ops-module](https://slides.rempart.dev/m2ops-module/),
+sur mot de passe fourni en séance. Une copie locale du deck est gardée dans
+`slides/` pour le travail hors ligne. Elle n'est pas publiée ici : ce sont des
+documents de cours, pas des livrables de l'équipe.
+
 ## Structure
 
 ```
 docs/           note de cadrage et schéma d'architecture
 sources.csv     sources de presse retenues et vérifiées
+slides/         copie locale des supports, non publiée (voir .gitignore)
 ```
 
 Les conteneurs, la collecte et la CI arrivent au TD 2.
