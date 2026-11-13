@@ -37,17 +37,17 @@ identifié, seuls les flux qui rendent du XML avec des articles sont retenus, et
 la note dit ce qu'on a le droit d'en faire, la date du test et le rythme de
 publication observé.
 
-| Perimetre | Flux |
+| Périmètre | Flux |
 |---|---|
-| Regions metropolitaines (13) | 64 PQR, deux au minimum par region |
-| Outre-mer (5 DROM) | 9 flux, 2 en Guadeloupe et en Martinique, 3 a La Reunion, 1 en Guyane et a Mayotte |
+| Régions métropolitaines (13) | 64 PQR, deux au minimum par région |
+| Outre-mer (5 DROM) | 9 flux, 2 en Guadeloupe et en Martinique, 3 à La Réunion, 1 en Guyane et à Mayotte |
 | National | 21 PQN |
 
-Sur 203 adresses testees, 85 rendent un flux exploitable. Les autres refusent les
+Sur 203 adresses testées, 85 rendent un flux exploitable. Les autres refusent les
 robots, renvoient du HTML au lieu de XML, ou n'existent plus. Les limites
-assumees sont ecrites dans la note de cadrage plutot que masquees : Guyane et
-Mayotte restent a une seule source, et aucun media d'extreme droite n'est retenu
-malgre un flux parfois valide. Le detail des listes ecartees est dans
+assumées sont écrites dans la note de cadrage plutôt que masquées : Guyane et
+Mayotte restent à une seule source, et aucun média d'extrême droite n'est retenu
+malgré un flux parfois valide. Le détail des listes écartées est dans
 [docs/cadrage.md](docs/cadrage.md).
 
 ## Supports du module
