@@ -1,0 +1,12 @@
+nom,type,region,acces,conditions,notes
+Ouest-France,PQR,"Bretagne, Pays de la Loire",https://www.ouest-france.fr/rss/une,"RSS public, titre et extrait seulement","HTTP 200 en XML au test du 2026-11-13, flux France disponible sur /rss/france"
+Le Dauphine Libere,PQR,"Auvergne-Rhone-Alpes",https://www.ledauphine.com/rss,"RSS public, titre et extrait seulement","HTTP 200, 21 elements au test du 2026-11-13"
+Nice-Matin,PQR,"Provence-Alpes-Cote d'Azur",https://www.nicematin.com/rss,"RSS public, titre et extrait seulement","HTTP 200, 50 elements au test du 2026-11-13"
+Dernieres Nouvelles d'Alsace,PQR,"Grand Est",https://www.dna.fr/rss,"RSS public, titre et extrait seulement","HTTP 200, 21 elements au test du 2026-11-13"
+L'Est Republicain,PQR,"Grand Est, Bourgogne-Franche-Comte",https://www.estrepublicain.fr/rss,"RSS public, titre et extrait seulement","HTTP 200, 21 elements au test du 2026-11-13"
+Le Progres,PQR,"Auvergne-Rhone-Alpes",https://www.leprogres.fr/rss,"RSS public, titre et extrait seulement","HTTP 200, 21 elements au test du 2026-11-13"
+Le Monde,PQN,National,https://www.lemonde.fr/rss/une.xml,"RSS public, une du jour","HTTP 200 en XML au test du 2026-11-13"
+Liberation,PQN,National,https://www.liberation.fr/arc/outboundfeeds/rss/?outputType=xml,"RSS public, une du jour","HTTP 200, flux Arc Publishing au test du 2026-11-13"
+Le Figaro,PQN,National,https://www.lefigaro.fr/rss/figaro_actualites.xml,"RSS public, actualites","HTTP 200 en XML au test du 2026-11-13"
+20 Minutes,PQN,National,https://www.20minutes.fr/feeds/rss-une.xml,"RSS public, edition gratuite","HTTP 200 en XML au test du 2026-11-13"
+L'Humanite,PQN,National,https://www.humanite.fr/rss,"RSS public, une du jour","HTTP 200 en XML au test du 2026-11-13"
