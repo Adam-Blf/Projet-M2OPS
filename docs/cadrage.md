@@ -52,23 +52,34 @@ où lire la suite.
 
 La veille de la séance a donné un résultat net, et il oriente l'architecture.
 Le RSS reste le canal le plus simple et le plus stable, mais **la presse
-quotidienne n'est pas homogène** : sur une quarantaine d'adresses testées à la
-main le 13 novembre 2026, vingt-neuf rendent du XML avec des articles, le reste
-refuse les robots ou renvoie une page vide.
+quotidienne n'est pas homogène** : sur deux cent trois adresses testées à la main
+le 13 novembre 2026, quatre-vingt-cinq rendent un flux XML avec des articles, le
+reste refuse les robots, renvoie une page HTML ou n'existe plus.
 
-- ouverts : vingt-quatre titres régionaux et cinq titres nationaux, listés dans
-  `sources.csv` avec le nombre d'articles vu au test ;
-- fermés : La Voix du Nord, Le Télégramme, Les Échos, Courrier Picard, Paris
-  Normandie, Nord Littoral, L'Avenir de l'Artois et 20 Minutes Rouen renvoient un
-  403, Sud Ouest et Charente Libre renvoient du HTML, La Dépêche, Midi Libre,
-  L'Indépendant, La Provence, La Croix et La Nouvelle République renvoient un 404.
+- ouverts : soixante-quatre flux régionaux et vingt-et-un nationaux, listés dans
+  `sources.csv` avec le nombre d'articles vu au test ; y compris les cinq DROM ;
+- fermés en 403 : La Voix du Nord, Le Télégramme, Les Échos, Courrier Picard,
+  Paris Normandie, Nord Littoral, L'Union, L'Ardennais, Le Journal de l'île de La
+  Réunion et 20 Minutes Rouen ;
+- renvoient du HTML au lieu d'un flux : La 1ère (toutes éditions), Var-Matin,
+  Politis ;
+- renvoient un 404 : La Montagne, L'Yonne Républicaine, La République du Centre,
+  L'Écho Républicain, Le Berry Républicain, Le Journal du Centre, La Nouvelle
+  République, Presse-Océan, Le Maine Libre, Le Courrier de l'Ouest, Le Populaire
+  du Centre, La Provence, La Marseillaise, Corse-Matin, Corse Net Infos, Isula,
+  France-Antilles, RCI, Le Quotidien de La Réunion, Le Point et Le Parisien aux
+  adresses testées.
 
-Trois enseignements. La PQR du groupe EBRA ouvre ses flux sans difficulté, et les
+Quatre enseignements. La PQR du groupe EBRA ouvre ses flux sans difficulté, et les
 médias d'enquête locaux ouvrent les leurs, donc le périmètre régional est
-atteignable sans contournement. Le repli par le flux de recherche Google News a
-été **testé puis écarté** : une requête par titre ne rend qu'un seul élément, ce
-qui ne fait pas une source. Enfin la couverture reste inégale : onze régions ont
-deux sources ou plus, la Normandie et la Corse une seule.
+atteignable sans contournement. Plusieurs titres demandent le suffixe `.xml`
+(`/rss.xml` rend du XML là où `/rss` rend un 404, cas de La Dépêche, Midi Libre,
+L'Indépendant, Sud Ouest, Charente Libre et La Croix) : le suffixe fait partie du
+contrat d'accès, pas d'un réglage. Les flux régionaux de France 3, stables et à
+trente articles, débloquent à eux seuls la Normandie, la Corse et le
+Centre-Val de Loire. Le repli par le flux de recherche Google News a été
+**testé puis écarté** : une requête par titre ne rend qu'un seul élément, ce qui
+ne fait pas une source.
 
 ### Couverture et ligne éditoriale
 
@@ -79,16 +90,19 @@ Deux règles de sélection, posées par l'équipe :
    n'atteint pas le seuil est signalée comme telle plutôt que complétée par une
    source de complaisance.
 2. **Aucun média d'extrême droite.** Sont écartés Rivarol, Minute, Présent,
-   Valeurs actuelles, Livre Noir, Frontières et équivalents. On privilégie la
+   Valeurs actuelles, Livre Noir, Frontières, France-Soir et équivalents. On privilégie la
    diversité des natures : quotidien régional, édition locale d'un gratuit
    national, média d'enquête local.
 
-Ce que la contrainte produit, honnêtement : la Normandie n'a que Ouest-France,
-dont le flux couvre aussi la Bretagne et les Pays de la Loire, et la Corse n'a
-qu'Alta Frequenza, Corse-Matin et Corse Net Infos étant injoignables. Pour
-atteindre le seuil sur ces deux régions il faudrait soit une source payante, soit
-un accès négocié, soit lire les titres à la main : trois options hors de portée
-d'un budget zéro, et la troisième n'est pas industrialisable.
+Ce que la contrainte produit, honnêtement : les treize régions métropolitaines
+atteignent le seuil, avec cinq sources régionales en Bretagne, en
+Bourgogne-Franche-Comté, en Grand Est et en Nouvelle-Aquitaine, et sept en
+Occitanie. En outre-mer, la Guadeloupe, la Martinique et La Réunion en ont deux ou
+trois ; la Guyane n'en a qu'une (Blada, France-Guyane et Mo'News injoignables) et
+Mayotte une seule (Mayotte Hebdo, Le Journal de Mayotte et Kwezi injoignables).
+Pour combler ces deux-là il faudrait une source payante ou un accès négocié :
+deux options hors de portée d'un budget zéro, et le seuil est donc signalé plutôt
+que maquillé.
 
 La règle de contenu est la même partout : **titre, extrait court, lien, date**.
 Jamais le corps de l'article, jamais de copie qui dispenserait de cliquer.
