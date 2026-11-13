@@ -52,21 +52,43 @@ où lire la suite.
 
 La veille de la séance a donné un résultat net, et il oriente l'architecture.
 Le RSS reste le canal le plus simple et le plus stable, mais **la presse
-quotidienne n'est pas homogène** : sur quatorze titres testés à la main le
-13 novembre 2026, onze répondent en XML et trois refusent les robots.
+quotidienne n'est pas homogène** : sur une quarantaine d'adresses testées à la
+main le 13 novembre 2026, vingt-neuf rendent du XML avec des articles, le reste
+refuse les robots ou renvoie une page vide.
 
-- lisibles en direct : Ouest-France, Le Dauphiné Libéré, Nice-Matin, les DNA,
-  L'Est Républicain et Le Progrès en PQR, plus Le Monde, Libération, Le Figaro,
-  20 Minutes et L'Humanité en PQN ;
-- fermés : La Voix du Nord, Le Télégramme et Les Échos renvoient un 403 même
-  avec un agent de navigateur, Sud Ouest renvoie du HTML, La Croix, La Dépêche
-  et La Provence renvoient un 404.
+- ouverts : vingt-quatre titres régionaux et cinq titres nationaux, listés dans
+  `sources.csv` avec le nombre d'articles vu au test ;
+- fermés : La Voix du Nord, Le Télégramme, Les Échos, Courrier Picard, Paris
+  Normandie, Nord Littoral, L'Avenir de l'Artois et 20 Minutes Rouen renvoient un
+  403, Sud Ouest et Charente Libre renvoient du HTML, La Dépêche, Midi Libre,
+  L'Indépendant, La Provence, La Croix et La Nouvelle République renvoient un 404.
 
-Deux enseignements. La PQR du groupe EBRA ouvre ses flux sans difficulté, donc
-le périmètre régional est atteignable sans contournement. Et le repli par le flux
-de recherche Google News a été **testé puis écarté** : une requête par titre ne
-rend qu'un seul élément, ce qui ne fait pas une source. Le détail vérifié, titre
-par titre, est dans `sources.csv`.
+Trois enseignements. La PQR du groupe EBRA ouvre ses flux sans difficulté, et les
+médias d'enquête locaux ouvrent les leurs, donc le périmètre régional est
+atteignable sans contournement. Le repli par le flux de recherche Google News a
+été **testé puis écarté** : une requête par titre ne rend qu'un seul élément, ce
+qui ne fait pas une source. Enfin la couverture reste inégale : onze régions ont
+deux sources ou plus, la Normandie et la Corse une seule.
+
+### Couverture et ligne éditoriale
+
+Deux règles de sélection, posées par l'équipe :
+
+1. **Deux sources minimum par région**, avec au moins un titre qui couvre
+   réellement la région et non un flux national filtré au mieux. Une région qui
+   n'atteint pas le seuil est signalée comme telle plutôt que complétée par une
+   source de complaisance.
+2. **Aucun média d'extrême droite.** Sont écartés Rivarol, Minute, Présent,
+   Valeurs actuelles, Livre Noir, Frontières et équivalents. On privilégie la
+   diversité des natures : quotidien régional, édition locale d'un gratuit
+   national, média d'enquête local.
+
+Ce que la contrainte produit, honnêtement : la Normandie n'a que Ouest-France,
+dont le flux couvre aussi la Bretagne et les Pays de la Loire, et la Corse n'a
+qu'Alta Frequenza, Corse-Matin et Corse Net Infos étant injoignables. Pour
+atteindre le seuil sur ces deux régions il faudrait soit une source payante, soit
+un accès négocié, soit lire les titres à la main : trois options hors de portée
+d'un budget zéro, et la troisième n'est pas industrialisable.
 
 La règle de contenu est la même partout : **titre, extrait court, lien, date**.
 Jamais le corps de l'article, jamais de copie qui dispenserait de cliquer.
