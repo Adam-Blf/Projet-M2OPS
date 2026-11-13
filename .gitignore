@@ -1,0 +1,14 @@
+# Documents internes EFREI, non publiables
+*.pdf
+
+# Systèmes et éditeurs
+Thumbs.db
+desktop.ini
+.DS_Store
+.idea/
+.vscode/
+
+# Secrets et environnements
+.env
+.env.*
+*.pem
