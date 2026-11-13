@@ -59,6 +59,12 @@ sont rangés à côté du dépôt, dans `../supports/`, pour que le dépôt ne c
 que le projet. Ce sont des documents de cours, pas des livrables de
 l'équipe : ils ne sont pas publiés.
 
+Le deck existe en trois formats dans `../supports/slides/` :
+`m2ops-module.pptx`, 22 diapos en 16:9 avec les tableaux natifs et le schéma du
+pipeline en image, prêt à projeter ; `m2ops-module.html` pour la lecture au
+navigateur ; `m2ops-module.md` pour le markdown source. Les PDF du module
+(syllabus, fiche épreuve, grilles RNCP 40875) sont rangés juste à côté.
+
 ## Structure
 
 ```
