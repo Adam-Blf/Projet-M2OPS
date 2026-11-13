@@ -119,7 +119,7 @@ machine, sans budget, et qui se teste.
 | Stockage | MongoDB, `articles_bruts` puis `articles_propres` | Un document JSON par article tel que publié, puis une collection nettoyée, et un index unique sur l'URL canonique : la déduplication est tenue par la base, pas par le code |
 | Requêtes | DuckDB | Analyse SQL en colonnes sans serveur, sur l'export Parquet des documents du jour ; DuckDB ne lit pas MongoDB directement, l'export est une étape assumée du pipeline |
 | Qualité | Polars et pytest | Transformations rapides et contrôles exécutables en CI |
-| Thèmes | TF-IDF et KMeans (scikit-learn) | Déterministe, réglable, sans modèle à télécharger ni GPU |
+| Thèmes | TF-IDF, analyse sémantique latente, KMeans | Déterministe, interprétable, sans modèle à télécharger ; voie d'amélioration par encodeur de phrases, comparée dans MLflow |
 | Suivi du modèle | MLflow, suivi d'expériences et registre | Chaque entraînement laisse une trace relisible : hyperparamètres, métriques, version retenue, et l'édition cite celle qui l'a produite |
 | Service du modèle | FastAPI et joblib, en conteneur | Le modèle versionné est servi derrière une route HTTP, image épinglée sur la version du jour, jamais sur `latest` |
 | Livraison | Markdown et JSON datés | Lisible par un humain, consommable par la supervision |
@@ -140,6 +140,10 @@ machine, sans budget, et qui se teste.
 | PostgreSQL | Modèle relationnel rigide pour des flux dont les champs changent d'un éditeur à l'autre, et un serveur de plus à tenir |
 | Scraping HTML du texte intégral | Contraire aux conditions des éditeurs, et le sujet est le thème du jour, pas l'article |
 | Résumé par LLM | Hors périmètre annoncé, coût et non-déterminisme, et le pipeline doit rester rejouable à l'identique |
+| LDA et NMF | Conçus pour des documents longs, instables sur des titres et des extraits, sortie probabiliste |
+| BERTopic complet | UMAP et HDBSCAN non déterministes, dépendances lourdes, gain marginal sur des textes courts |
+| HDBSCAN seul | Laisse des articles non classés, inacceptable pour une gazette qui couvre toutes les sources |
+| Doc2Vec et Word2Vec moyennés | Dépassés par les encodeurs modernes, moins interprétables qu'un TF-IDF pondéré |
 | SQLite seul | Suffisant pour la collecte, faible pour relire des colonnes et rejouer une journée |
 | Google News comme source unique | Un seul point de défaillance, et on perdrait la lecture directe des titres qui l'autorisent |
 | n8n ou équivalent no-code | Peu testable, peu versionnable, et la grille regarde la CI/CD |
@@ -211,19 +215,63 @@ que publié, index unique sur l'URL canonique. Le propre : collection
 et testées. Forme : documents JSON pour le brut (les champs changent d'un
 éditeur à l'autre), export Parquet daté pour l'analyse DuckDB. Rétention : brut
 purge au-delà de trente jours, éditions archivées avec leur version de modèle.
+### 4. Regrouper des textes (automatique)
 
-### 4. Regrouper des textes
+Méthode automatique : chaque matin, après la collecte et le stockage dans
+`articles_propres`, un script de regroupement non supervisé détecte les thèmes
+du jour sans intervention manuelle. La méthode suit ces étapes :
 
-Approche : TF-IDF puis KMeans, déterministe avec graine fixe, nombre de thèmes
-borné. Traçabilité : chaque run entre dans MLflow avec les données, les
-paramètres, les métriques et les artefacts, et l'édition cite la version qui
-l'a produite. Cette version est servie par une API FastAPI en conteneur, image
-épinglée sur la version du jour, jamais sur `latest`. Pièges : dérive du
-regroupement d'un jour à l'autre (graine fixe et relecture manuelle en début de
-module), doublons entre titres (déduplication par URL canonique puis par
-similarité de titre).
+1. Vectorisation : TF‑IDF sur les titres et les extraits courts (poids en mots
+   et bigrammes, `min_df` ≥ 2, `max_df` ≤ 0,85, normalisation L2). Cette étape
+   est totalement déterministe et ne sélectionne aucun thème à l'avance.
 
-### 5. Surveiller
+2. Redimensionnement optionnel : analyse sémantique latente (TruncatedSVD,
+   ≤ 100 composantes) pour densifier les vecteurs courts sans modifier la
+   reproductibilité.
+
+3. Clustering non supervisé : KMeans dont le nombre de clusters k est choisi
+   par la méthode du coude (elbow method) sur le score de silhouette, appliqué
+   aux vecteurs de la nuit précédente. Aucune thématique n'est imposée à
+   l'avance ; le data‑détermine k.
+
+4. Étiquetage automatique : les trois termes les plus distintifs de chaque
+   cluster sont extraits via c‑TF‑IDF (termes qui caractérisent le cluster plutôt
+   que les termes les plus fréquents globalement). Les libellés de thème résultent
+   de ces termes, pas d'un choix préalable.
+
+5. Traçabilité : chaque run entière (paramètres, vecteurs, clusters, libellés)
+   est enregistrée dans MLflow. L'édition du jour cite la version du modèle
+   qui a produit ses thèmes. La veille suivante, le même pipeline s'exécute
+   avec les mêmes paramètres ; les thèmes du jour d'hier sont comparés à ceux
+   de aujourd'hui via l'indice de Rand ajusté sur les articles communs.
+
+**Pièges documentés** (écrits pour la soutenance, pas pour guider le pipeline) :
+
+- Si le nombre d'articles par cluster tombe sous 5, le cluster est fusionné
+  au voisinage ou abandonné, pour éviter des micro‑thèmes sans contenu.
+- La dérives du jour au lendemain peut déplacer un article d'un cluster à
+  otro ; l'indice de Rand ajusté alerte sur ce changement.
+- Aucun LLM ni génération de texte n'est utilisé : le regroupement se fait par
+  similarité lexicale, conformément aux contraintes du brief.
+
+**Comparaison avec des approches alternatives** (référence pour la soutenance,
+pas pour le pipeline) :
+
+- **LDA/NMF** : inadaptées aux titres courts, sortie probabiliste, moins
+  reproductible d'un run à l'autre.
+- **BERTopic complet** (MiniLM + UMAP + HDBSCAN) : plus riche en sens mais
+  introduit du non‑déterminisme et des dépendances lourdes pour un gain
+  marginal sur des textes de quelques mots ; réservé à une expérience
+  tracée en MLflow, pas au pipeline de production.
+- **HDBSCAN seul** : laisse des articles non classés, inacceptable pour une
+  gazette qui doit couvrir toutes les sources chaque matin.
+- **Résumé ou étiquetage par LLM** : hors périmètre annoncé, coût et
+  non‑déterminisme.
+
+**Voie d'amélioration pour le TD 6** : remplacer l'étape 1 (TF‑IDF) par des
+encodeurs de phrases (all‑MiniLM‑L6‑v2) et garder les étapes 3‑5 inchangées.
+Le TD 6 compare les deux runs dans MLflow et choisit la version la plus
+stable, avec retour arrière testé.### 5. Surveiller
 
 Métriques : compteurs par source, durées par étape, volumes, métriques de
 regroupement. Journaux : logs JSON structurés par étape. Alertes : au moins
