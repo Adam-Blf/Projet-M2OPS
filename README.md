@@ -27,7 +27,28 @@ génération de résumé par LLM, aucun scraping du texte intégral.
 |---|---|
 | [docs/cadrage.md](docs/cadrage.md) | Besoin reformulé, périmètre, contraintes, stack retenue et alternatives écartées, risques, rôles |
 | [docs/architecture.md](docs/architecture.md) | Les six boîtes en Mermaid, ce qui circule entre elles, où ça tourne |
-| [sources.csv](sources.csv) | Onze sources vérifiées à la main, PQR et PQN, avec accès et conditions |
+| [sources.csv](sources.csv) | 85 flux vérifiés à la main, 64 PQR et 21 PQN, avec accès, conditions et fréquence mesurée |
+
+## Couverture des sources
+
+Le fichier [sources.csv](sources.csv) tient en six colonnes : nom, type, region,
+acces, conditions, notes. Chaque adresse a été ouverte à la main avec un agent
+identifié, seuls les flux qui rendent du XML avec des articles sont retenus, et
+la note dit ce qu'on a le droit d'en faire, la date du test et le rythme de
+publication observé.
+
+| Perimetre | Flux |
+|---|---|
+| Regions metropolitaines (13) | 64 PQR, deux au minimum par region |
+| Outre-mer (5 DROM) | 9 flux, 2 en Guadeloupe et en Martinique, 3 a La Reunion, 1 en Guyane et a Mayotte |
+| National | 21 PQN |
+
+Sur 203 adresses testees, 85 rendent un flux exploitable. Les autres refusent les
+robots, renvoient du HTML au lieu de XML, ou n'existent plus. Les limites
+assumees sont ecrites dans la note de cadrage plutot que masquees : Guyane et
+Mayotte restent a une seule source, et aucun media d'extreme droite n'est retenu
+malgre un flux parfois valide. Le detail des listes ecartees est dans
+[docs/cadrage.md](docs/cadrage.md).
 
 ## Supports du module
 
