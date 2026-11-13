@@ -20,24 +20,38 @@ Binôme : **Adam Beloucif** ([Adam-Blf](https://github.com/Adam-Blf)) et
 occupent la presse française : les thèmes du jour, les titres qui les traitent,
 et où lire la suite. Pas un lecteur d'actualité, un radar éditorial.
 
-Cadre du projet : édition à 7 h, articles de moins de 24 h, conditions des
-éditeurs respectées, aucune donnée personnelle, budget zéro, aucun résumé généré
-par un LLM, aucun scraping du texte intégral. On ne conserve qu'un titre, un
-extrait, un lien et une date.
+## État TD 2 - Le socle
 
-## Architecture
+À la fin du TD 2, le projet dispose d'un socle opérationnel :
 
-Le pipeline tient en six boîtes. Chaque TD en construit une ou deux, et les dix
-séances du module mènent à un ensemble qui tourne seul, chaque matin.
+- **Dockerfile** multi-étapes : l'image finale est petite, l'utilisateur est non root
+- **docker-compose.yml** : compose l'app + PostgreSQL + les dépendances nécessaires
+- **bin/dev** : lance le projet en deux commandes depuis le dépôt racine
+- **bin/test** : exécute la suite de tests unitaires
+- **CI GitHub Actions** : lint → tests → build de l'image → push dans le registre (ghcr.io) avec le tag horodaté + sha
+- **Un test unitaire** sur le parseur de sources, avec une fixture dans `tests/fixtures/`
+- **README** : une personne extérieure peut lancer le projet en deux commandes depuis ce fichier
+- **CONTRIBUTING.md** : conventions de nommage, format des commits, qui merge
+
+### Pipeline CI (.github/workflows/ci.yml)
+
+Le pipeline effectue : lint → tests → build de l'image → push dans le registre avec le tag `YYYYMMDDHHMMSS-sha`.
+
+Un test cassé rend la CI rouge et bloque le merge sur `main`.
+
+### Architecture (six boîtes)
+
+Chaque TD en construit une ou deux, et les dix séances du module mènent à un
+ensemble qui tourne seul, chaque matin.
 
 ```mermaid
 flowchart LR
-  S1["Collecte des flux<br/>un connecteur par titre"]
-  S2["Stockage brut<br/>PostgreSQL, tables `articles_brutes` (JSONB)"
-  S3["Nettoyage et qualité<br/>contrôles DuckDB, déduplication"]
-  S4["Regroupement par thèmes<br/>TF-IDF, KMeans, registre MLflow"]
-  S5["Livraison de l'édition<br/>Markdown et JSON, 7 h"]
-  S6["Supervision<br/>Prometheus, Grafana, Loki"]
+  S1["1. Collecte des flux / un connecteur par titre"]
+  S2["2. Stockage brut / PostgreSQL, tables `articles_brutes` (JSONB)"]
+  S3["3. Nettoyage et qualité / contrôles DuckDB, déduplication"]
+  S4["4. Regroupement par thèmes / TF-IDF, KMeans, registre MLflow"]
+  S5["5. Livraison de l'édition / Markdown et JSON, 7 h"]
+  S6["6. Supervision / Prometheus, Grafana, Loki"]
 
   S1 -->|articles bruts| S2
   S2 -->|lots du jour| S3
@@ -61,8 +75,50 @@ flowchart LR
   class S6 error
 ```
 
-Les articles bruts sont stockés dans PostgreSQL, un document par article, avec un
-index unique sur l'URL canonique pour que la déduplication soit tenue par la base.
+Les articles bruts sont stockés dans PostgreSQL, un document par article, avec
+un index unique sur l'URL canonique pour que la déduplication soit tenue par la
+base.
+
+## Architecture
+
+Le pipeline tient en six boîtes. Chaque TD en construit une ou deux, et les dix
+séances du module mènent à un ensemble qui tourne seul, chaque matin.
+
+```mermaid
+flowchart LR
+  S1["1. Collecte des flux / un connecteur par titre"]
+  S2["2. Stockage brut / PostgreSQL, tables `articles_brutes` (JSONB)"]
+  S3["3. Nettoyage et qualité / contrôles DuckDB, déduplication"]
+  S4["4. Regroupement par thèmes / TF-IDF, KMeans, registre MLflow"]
+  S5["5. Livraison de l'édition / Markdown et JSON, 7 h"]
+  S6["6. Supervision / Prometheus, Grafana, Loki"]
+
+  S1 -->|articles bruts| S2
+  S2 -->|lots du jour| S3
+  S3 -->|articles propres| S4
+  S4 -->|thèmes et volumes| S5
+  S3 -.->|rapport de qualité| S6
+  S4 -.->|métriques| S6
+  S5 -.->|statut| S6
+  S6 -.->|relance ou alerte| S1
+
+  classDef input fill:#2563eb,stroke:#1e3a8a,color:#fff
+  classDef process fill:#7c3aed,stroke:#4c1d95,color:#fff
+  classDef store fill:#f59e0b,stroke:#92400e,color:#111
+  classDef ok fill:#16a34a,stroke:#14532d,color:#fff
+  classDef error fill:#dc2626,stroke:#7f1d1d,color:#fff
+
+  class S1 input
+  class S2 store
+  class S3,S4 process
+  class S5 ok
+  class S6 error
+```
+
+Les articles bruts sont stockés dans PostgreSQL, un document par article, avec
+un index unique sur l'URL canonique pour que la déduplication soit tenue par la
+base.
+
 Les contrôles qualité et les agrégats de l'édition passent par DuckDB, sur un
 export Parquet daté. Chaque entraînement est tracé dans MLflow, qui garde les
 hyperparamètres, les métriques et la version du modèle, et cette version est
@@ -70,7 +126,7 @@ servie par une API FastAPI en conteneur. Les traitements tournent en conteneurs
 Podman, ordonnancés par un CronJob Kubernetes local, et la supervision passe par
 Prometheus, Grafana et Loki.
 
-Le détail des flux, des volumes et de l'hébergement de chaque brique est dans
+Le détail des flux, des volumes et de l'hébergage de chaque brique est dans
 [docs/architecture.md](docs/architecture.md).
 
 ## Livrables du TD 1, cadrage et bornage
@@ -87,7 +143,7 @@ Le fichier [sources.csv](sources.csv) tient en six colonnes : nom, type, region,
 acces, conditions, notes. Chaque adresse a été ouverte à la main avec un agent
 identifié, seuls les flux qui rendent du XML avec des articles sont retenus, et
 la note dit ce qu'on a le droit d'en faire, la date du test et le rythme de
-publication observé.
+publication observée.
 
 | Périmètre | Flux |
 |---|---|
@@ -111,6 +167,14 @@ sources.csv     sources de presse retenues et vérifiées
 
 Les conteneurs, la collecte et la chaîne d'intégration continue arrivent au TD 2.
 
+## Contributing (CONTRIBUTING.md)
+
+| Sujet | Règle |
+|---|---|
+| Nommage des branches | Une branche par sujet, PR avec revue avant merge |
+| Format des commits | Conventional Commits, type: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore` |
+| Qui merge | Seule la personne ayant écrit le code ou le mainteneur de projet |
+
 ## Licence
 
-MIT, voir [LICENSE](LICENSE).
+MIT, voir [LICENSE](LICENSE).

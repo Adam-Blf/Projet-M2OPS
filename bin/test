@@ -1,0 +1,28 @@
+#!/bin/bash
+# bin/test - Exécute la suite de tests unitaires
+set -e
+
+echo "=== Exécution des tests unitaires M2Ops ==="
+
+# Définir le répertoire du projet
+PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+
+# Installer les dépendances si nécessaire
+if [ ! -d "$PROJECT_DIR/.venv" ]; then
+    echo "Création de l'environnement virtuel..."
+    python3 -m venv "$PROJECT_DIR/.venv"
+fi
+
+# Activer l'environnement virtuel
+source "$PROJECT_DIR/.venv/bin/activate"
+
+# Installer les dépendances
+echo "Installation des dépendances..."
+pip install -q pytest httpx feedparser duckdb psycopg2-binary
+
+# Lancer les tests
+echo "Exécution des tests..."
+pytest "$PROJECT_DIR/tests/" -v
+
+# Désactiver l'environnement virtuel
+deactivate

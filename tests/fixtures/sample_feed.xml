@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>La Gazette de Test</title>
+    <link>https://example.com/test</link>
+    <description>Flux de test pour M2Ops</description>
+    <atom:link href="https://example.com/test/feed" rel="self" type="application/rss+xml"/>
+    <item>
+      <title>Titre de test 1</title>
+      <link>https://example.com/article1</link>
+      <description>C'est un extrait pour le test 1</description>
+      <pubDate>Mon, 13 Nov 2026 10:00:00 +0100</pubDate>
+    </item>
+    <item>
+      <title>Titre de test 2</title>
+      <link>https://example.com/article2</link>
+      <description>C'est un extrait pour le test 2</description>
+      <pubDate>Mon, 13 Nov 2026 11:00:00 +0100</pubDate>
+    </item>
+  </channel>
+</rss>

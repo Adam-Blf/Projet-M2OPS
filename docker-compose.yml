@@ -1,0 +1,36 @@
+version: "3.8"
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: m2ops_app
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=m2ops
+      - POSTGRES_USER=m2ops_user
+      - POSTGRES_PASSWORD=m2ops_pass
+      - POSTGRES_HOST=db
+    volumes:
+      - ./data:/app/data:cached
+    depends_on:
+      db
+    ports:
+      - "8000:8000"
+
+  db:
+    image: postgres:15-alpine
+    container_name: m2ops_db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=m2ops
+      - POSTGRES_USER=m2ops_user
+      - POSTGRES_PASSWORD=m2ops_pass
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+volumes:
+  postgres_data:
