@@ -9,7 +9,7 @@ flowchart LR
   S1["1. Collecte des flux<br/>un connecteur RSS par titre"]
   S2["2. Stockage brut<br/>MongoDB, documents horodatés"]
   S3["3. Nettoyage et contrôle qualité<br/>contrôles DuckDB, champs requis"]
-  S4["4. Regroupement par thèmes<br/>TF-IDF puis KMeans"]
+  S4["4. Regroupement par thèmes (automatique)"]
   M1["Registre de modèles<br/>MLflow, versions et métriques"]
   M2["Service du modèle<br/>FastAPI, version épinglée"]
   S5["5. Livraison de l'édition<br/>Markdown et JSON datés, 7 h"]
@@ -48,7 +48,7 @@ flowchart LR
 | Collecte | MongoDB, `articles_bruts` | Un document par article : titre, extrait, lien, date, titre de presse, rubrique | Quelques centaines à quelques milliers de documents par jour |
 | MongoDB, `articles_propres` | Qualité | Export Parquet du jour, relu par DuckDB | Un fichier par jour et par source |
 | Qualité | Thèmes | Articles retenus, texte normalisé pour la similarité | Deux tiers du brut environ, doublons et anciens retirés |
-| Thèmes | Registre | Matrice TF-IDF, modèle KMeans, hyperparamètres, métriques de cohésion | Un run par entraînement, quelques dizaines par semaine |
+| Thèmes | Registre | Matrice TF‑IDF, KMeans (choix k par élbo sur silhouette), hyperparamètres, métriques de cohésion | Un run par entraînement, quelques dizaines par semaine |
 | Registre | Livraison | Version du modèle qui a produit l'édition, ses métriques | Une version par jour |
 | Registre | Service | Artefact sérialisé et version épinglée | Une image immuable par version |
 | Thèmes | Livraison | Thèmes, articles rattachés, compteurs par titre de presse | Une dizaine de thèmes par jour |
