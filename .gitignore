@@ -1,6 +1,5 @@
-# Documents internes EFREI et supports de cours, non publiables
+# Documents internes EFREI, non publiables
 *.pdf
-slides/
 
 # Systèmes et éditeurs
 Thumbs.db
