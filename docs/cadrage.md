@@ -173,6 +173,71 @@ machine, sans budget, et qui se teste.
 Les deux membres installent Podman, kubectl avec kind ou minikube, Git, Python et
 un accès au dépôt avant le TD 2.
 
+## Choix par thème
+
+Ce que chaque thème impose, et ce qu'on a tranché. Les pièges sont écrits ici
+parce qu'ils coûtent plus cher que le code.
+
+### 1. Récupérer la presse
+
+Déjà tranché au TD 1. Canal : RSS, un connecteur par titre, avec httpx et
+feedparser. L'adresse exacte fait partie du contrat d'accès : plusieurs titres
+demandent le suffixe `.xml` (`/rss.xml` rend du XML là où `/rss` rend un 404),
+cas de La Dépêche, Midi Libre, L'Indépendant, Sud Ouest, Charente Libre et La
+Croix. Forme reçue : XML avec titre, extrait, lien, date. Pièges : 403 sur
+certains titres (La Voix du Nord, Les Échos, 20 Minutes Rouen), HTML au lieu
+d'un flux (La 1ère, Var-Matin, Politis), 404 (Le Point, Le Parisien aux
+adresses testées), flux qui republient de l'ancien, blocage anti-robot. Repli
+par le flux de recherche Google News testé puis écarté : une requête par titre
+ne rend qu'un seul élément, ce qui ne fait pas une source. Aucun scraping du
+texte intégral.
+
+### 2. Faire tourner chaque matin
+
+Comment : un CronJob Kubernetes déclenche le pipeline à 2 h, l'édition est prête
+avant 7 h. Où : conteneurs Podman sur une machine de l'équipe, cluster local
+kind. Relance : le CronJob se relance seul le lendemain ; relance manuelle par
+`kubectl create job --from=cronjob/...` ; si la collecte est partielle, une
+fenêtre de 24 h glissante et une édition dégradée signalée. La supervision
+observe l'absence, pas seulement l'erreur : un pipeline qui ne tourne pas ne
+produit aucun log d'erreur, donc l'alerte porte sur la métrique « édition du
+jour absente ».
+
+### 3. Stocker
+
+Le brut : MongoDB, collection `articles_bruts`, un document JSON par article tel
+que publié, index unique sur l'URL canonique. Le propre : collection
+`articles_propres`, distincte, alimentée par les règles d'exclusion documentées
+et testées. Forme : documents JSON pour le brut (les champs changent d'un
+éditeur à l'autre), export Parquet daté pour l'analyse DuckDB. Rétention : brut
+purge au-delà de trente jours, éditions archivées avec leur version de modèle.
+
+### 4. Regrouper des textes
+
+Approche : TF-IDF puis KMeans, déterministe avec graine fixe, nombre de thèmes
+borné. Traçabilité : chaque run entre dans MLflow avec les données, les
+paramètres, les métriques et les artefacts, et l'édition cite la version qui
+l'a produite. Cette version est servie par une API FastAPI en conteneur, image
+épinglée sur la version du jour, jamais sur `latest`. Pièges : dérive du
+regroupement d'un jour à l'autre (graine fixe et relecture manuelle en début de
+module), doublons entre titres (déduplication par URL canonique puis par
+similarité de titre).
+
+### 5. Surveiller
+
+Métriques : compteurs par source, durées par étape, volumes, métriques de
+regroupement. Journaux : logs JSON structurés par étape. Alertes : au moins
+deux, dont l'absence d'édition du jour. Tableau de bord : la gazette, la
+machine, le modèle. Runbook d'incident et sauvegarde restaurée, journal de bord
+à jour.
+
+### 6. Décrire l'infrastructure en code
+
+Options : Terraform pour les ressources, Ansible pour la machine, secrets hors
+du dépôt. Hébergement et options finales : laissés ouverts pour le TD 9, où la
+reconstruction de zéro est démontrée et chronométrée. Aujourd'hui tout tourne en
+local sur une machine de l'équipe, en conteneurs Podman ordonnancés par kind.
+
 ## Prochaine étape
 
 TD 2, le socle : dépôt structuré, premiers conteneurs, première chaîne
