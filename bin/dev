@@ -1,26 +1,25 @@
 #!/bin/bash
-# bin/dev - Lance le projet M2Ops en deux commandes
-# Cette script initialise l'environnement de développement
+# bin/dev - base PostgreSQL + une collecte de test (5 flux)
+# Sur un serveur ou Podman tourne en root : sudo bin/dev
+set -euo pipefail
+cd "$(dirname "$0")/.."
 
-set -e
-
-echo "=== Lancement de l'environnement de développement M2Ops ==="
-
-# 1. Vérifier que Docker/Podman est disponible
-if command -v podman &>/dev/null; then
-    CONTAINER_ENGINE="podman"
-elif command -v docker &>/dev/null; then
-    CONTAINER_ENGINE="docker"
+if command -v podman-compose >/dev/null; then
+    COMPOSE="podman-compose"
+elif command -v docker >/dev/null; then
+    COMPOSE="docker compose"
 else
-    echo "❌ Ni Podman ni Docker trouvés. Installez-en un."
+    echo "Ni podman-compose ni docker trouves." >&2
     exit 1
 fi
 
-# 2. Construire et démarrer les conteneurs
-echo "Construction des conteneurs avec $CONTAINER_ENGINE..."
-$CONTAINER_ENGINE compose up --build -d
+if [ ! -f .env ]; then
+    cp .env.example .env
+    echo ".env cree depuis .env.example : changez le mot de passe."
+fi
+mkdir -p data
 
-echo "✅ Environnement de développement prêt !"
-echo "   - L'app est accessible via les ports définis dans docker-compose.yml"
-echo "   - PostgreSQL est prêt à recevoir les connexions"
-echo "   - Pour voir les logs : $CONTAINER_ENGINE compose logs -f"
+$COMPOSE build
+$COMPOSE up -d db
+$COMPOSE run --rm collector
+echo "Purge (J+7) : $COMPOSE run --rm purge"

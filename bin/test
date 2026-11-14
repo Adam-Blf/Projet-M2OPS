@@ -1,28 +1,16 @@
 #!/bin/bash
-# bin/test - Exécute la suite de tests unitaires
-set -e
+# bin/test - lint + tests unitaires (sans reseau ni base)
+set -euo pipefail
+cd "$(dirname "$0")/.."
 
-echo "=== Exécution des tests unitaires M2Ops ==="
-
-# Définir le répertoire du projet
-PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-
-# Installer les dépendances si nécessaire
-if [ ! -d "$PROJECT_DIR/.venv" ]; then
-    echo "Création de l'environnement virtuel..."
-    python3 -m venv "$PROJECT_DIR/.venv"
+if command -v uv >/dev/null; then
+    uv venv -q --allow-existing .venv
+    uv pip install -q --python .venv -r requirements-dev.txt
+else
+    [ -d .venv ] || python3 -m venv .venv
+    .venv/bin/pip install -q -r requirements-dev.txt
 fi
 
-# Activer l'environnement virtuel
-source "$PROJECT_DIR/.venv/bin/activate"
-
-# Installer les dépendances
-echo "Installation des dépendances..."
-pip install -q pytest httpx feedparser duckdb psycopg2-binary
-
-# Lancer les tests
-echo "Exécution des tests..."
-pytest "$PROJECT_DIR/tests/" -v
-
-# Désactiver l'environnement virtuel
-deactivate
+.venv/bin/ruff check .
+.venv/bin/flake8 src/ tests/ --max-line-length=100
+.venv/bin/pytest -v

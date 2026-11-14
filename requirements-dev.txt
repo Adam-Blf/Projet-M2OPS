@@ -1,0 +1,5 @@
+# Outils de developpement et de CI
+-r requirements.txt
+pytest>=8.0
+ruff>=0.6
+flake8>=7.0

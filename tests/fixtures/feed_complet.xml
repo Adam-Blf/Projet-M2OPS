@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/"
+     xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <channel>
+    <title>Journal &amp; Fixture</title>
+    <link>https://example.com/</link>
+    <description>Cas limites pour les tests</description>
+    <item>
+      <title>Un article avec du &lt;b&gt;HTML&lt;/b&gt; et un long extrait</title>
+      <link>https://Example.com/article-long?utm_source=rss&amp;id=42#haut</link>
+      <description><![CDATA[<p>Ceci est un extrait <strong>tres long</strong> qui depasse largement les deux cents caracteres autorises par la note de cadrage, afin de verifier que le parseur coupe proprement sur une fin de mot et ajoute une ellipse a la fin du texte conserve, sans garder le reste.</p>]]></description>
+      <content:encoded><![CDATA[<p>TEXTE INTEGRAL DE L'ARTICLE A NE JAMAIS GARDER</p>]]></content:encoded>
+      <dc:creator>Auteur A Ignorer</dc:creator>
+      <category>Politique</category>
+      <pubDate>Fri, 13 Nov 2026 08:30:00 +0100</pubDate>
+    </item>
+    <item>
+      <title>Article sans date</title>
+      <link>https://example.com/sans-date</link>
+      <description>Court.</description>
+    </item>
+    <item>
+      <title>Article sans lien</title>
+      <description>Doit etre ignore.</description>
+      <pubDate>Fri, 13 Nov 2026 09:00:00 +0100</pubDate>
+    </item>
+  </channel>
+</rss>

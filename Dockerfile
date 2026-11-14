@@ -1,58 +1,30 @@
-# Dockerfile M2Ops - Multi-stage build avec Podman/Docker
-# ---------------------------------------------------------
-# Étage 1 : Build de l'application
-FROM python:3.12-slim AS builder
+# Image de la collecte et de la purge (meme image, deux commandes)
+# -----------------------------------------------------------------
+# Etage 1 : installation des dependances dans un prefixe isole
+FROM docker.io/library/python:3.12-slim AS builder
 
-# Installer les dépendances système nécessaires
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    && rm -rf /var/lib/apt/lists/*
-
-# Créer un utilisateur non-root
-RUN useradd --create-home --shell /bin/bash appuser
-
-# Définir le répertoire de travail
-WORKDIR /app
-
-# Copier les fichiers de dépendances d'abord (mise en cache Docker)
+WORKDIR /build
 COPY requirements.txt ./
+RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
 
-# Installer les dépendances Python
-RUN pip install --no-cache-dir -r requirements.txt
+# -----------------------------------------------------------------
+# Etage 2 : image finale, sans outils de build ni tests
+FROM docker.io/library/python:3.12-slim
 
-# Copier le code source
-COPY src/ ./src/
-COPY tests/ ./tests/
+# Utilisateur non root, UID fixe (1000) pour ecrire dans le volume ./data
+RUN useradd --uid 1000 --create-home --shell /usr/sbin/nologin appuser
 
-# Générer les fixtures si nécessaire
-RUN python -m pytest tests/ --co
-
-# ---------------------------------------------------------
-# Étage 2 : Image de production finale (très petite)
-FROM python:3.12-slim AS production
-
-# Installer seulement les dépendances runtime nécessaires
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    ca-certificates \
-    && rm -rf /var/lib/apt/lists/*
-
-# Créer un utilisateur non-root (même uid que dans builder)
-RUN useradd --create-home --shell /bin/bash appuser
-
-# Définir le répertoire de travail
 WORKDIR /app
+COPY --from=builder /install /usr/local
+COPY sources.csv ./
+COPY src/ ./src/
+RUN mkdir -p /app/data && chown appuser:appuser /app/data
 
-# Copier uniquement les fichiers nécessaires depuis l'étage builder
-COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
-COPY --from=builder /app/src ./src
-COPY --from=builder /app/tests ./tests
-COPY --from=builder /app/requirements.txt ./
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    DATA_DIR=/app/data
 
-# Passer à l'utilisateur non-root
 USER appuser
 
-# Exposer le port d'application (si besoin)
-EXPOSE 8000
-
-# Commande par défaut
-CMD ["python", "-m", "src.reader"]
+# Par defaut : la collecte. La purge : python -m src.purge
+CMD ["python", "-m", "src.collect"]

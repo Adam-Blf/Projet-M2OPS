@@ -12,3 +12,14 @@ desktop.ini
 .env
 .env.*
 *.pem
+!.env.example
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.ruff_cache/
+
+# Donnees produites par la collecte (brut, etat, journaux)
+data/

@@ -1,36 +1,69 @@
-version: "3.8"
+# Base PostgreSQL + deux taches ponctuelles (collecte, purge) sur la meme image.
+#
+#   cp .env.example .env          # puis changer le mot de passe
+#   mkdir -p data
+#   podman-compose up -d db
+#   podman-compose run --rm collector
+#   podman-compose run --rm purge
+#
+# (fonctionne aussi avec `docker compose`)
 
 services:
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: m2ops_app
-    restart: unless-stopped
-    environment:
-      - POSTGRES_DB=m2ops
-      - POSTGRES_USER=m2ops_user
-      - POSTGRES_PASSWORD=m2ops_pass
-      - POSTGRES_HOST=db
-    volumes:
-      - ./data:/app/data:cached
-    depends_on:
-      db
-    ports:
-      - "8000:8000"
-
   db:
-    image: postgres:15-alpine
+    image: docker.io/library/postgres:16-alpine
     container_name: m2ops_db
     restart: unless-stopped
-    environment:
-      - POSTGRES_DB=m2ops
-      - POSTGRES_USER=m2ops_user
-      - POSTGRES_PASSWORD=m2ops_pass
+    env_file: .env
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    # aucun port publie : seuls les conteneurs du projet parlent a la base
+
+  collector:
+    build: .
+    image: localhost/m2ops-collector:dev
+    env_file: .env
+    environment:
+      POSTGRES_HOST: db
+    # 5 flux pour les essais (PQN + PQR) ; retirer les --source pour tout collecter
+    command:
+      - python
+      - -m
+      - src.collect
+      - --source
+      - Le Monde
+      - --source
+      - La Croix
+      - --source
+      - Le Dauphine Libere
+      - --source
+      - France 3 Bretagne
+      - --source
+      - Midi Libre
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  purge:
+    build: .
+    image: localhost/m2ops-collector:dev
+    env_file: .env
+    environment:
+      POSTGRES_HOST: db
+    command: ["python", "-m", "src.purge"]
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
 
 volumes:
   postgres_data:

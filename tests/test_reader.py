@@ -1,36 +1,60 @@
-"""Tests unitaires pour le module reader."""
+"""Tests du parsing, sans reseau (fixtures dans tests/fixtures/)."""
 
-import pytest
+from pathlib import Path
 
-from src.reader import load_sources, read_source, read_all_sources
+from src.reader import (
+    EXTRAIT_MAX,
+    canonical_url,
+    load_sources,
+    parse_feed,
+    source_id,
+    truncate,
+)
+
+FIXTURES = Path(__file__).parent / "fixtures"
 
 
-def test_load_sources_returns_list():
-    """test_load_sources_returns_list"""
+def test_load_sources_trouve_le_csv():
     sources = load_sources()
-    assert isinstance(sources, list)
     assert len(sources) > 0
+    for s in sources:
+        assert s["nom"] and s["acces"].startswith("http")
 
 
-def test_sources_have_required_fields():
-    """test_sources_have_required_fields"""
-    sources = load_sources()
-    for source in sources:
-        assert "nom" in source, f"Source missing 'nom': {source}"
-        assert "acces" in source, f"Source missing 'acces': {source}"
+def test_parse_fixture_simple():
+    parsed = parse_feed((FIXTURES / "sample_feed.xml").read_bytes())
+    assert parsed["feed_title"] == "La Gazette de Test"
+    assert parsed["bozo"] is False
+    assert [a["titre"] for a in parsed["articles"]] == ["Titre de test 1", "Titre de test 2"]
+    premier = parsed["articles"][0]
+    assert premier["lien"] == "https://example.com/article1"
+    assert premier["date"] == "2026-11-13T09:00:00+00:00"  # 10h +01:00 -> 9h UTC
 
 
-def test_read_source_returns_list():
-    """test_read_source_returns_list"""
-    sources = load_sources()
-    if sources:
-        first_source = sources[0]
-        articles = read_source(first_source)
-        assert isinstance(articles, list)
+def test_parse_fixture_cas_limites():
+    parsed = parse_feed((FIXTURES / "feed_complet.xml").read_bytes())
+    articles = parsed["articles"]
+    # l'article sans lien est ecarte, celui sans date est garde
+    assert [a["titre"] for a in articles] == [
+        "Un article avec du HTML et un long extrait",
+        "Article sans date",
+    ]
+    long = articles[0]
+    assert len(long["extrait"]) <= EXTRAIT_MAX
+    assert long["extrait"].endswith("…")
+    assert "<" not in long["extrait"]
+    assert long["rubrique"] == "Politique"
+    assert long["titre_presse"] == "Journal & Fixture"
+    assert long["url_canonique"] == "https://example.com/article-long?id=42"
+    assert articles[1]["date"] is None
+    # ni texte integral ni auteur dans ce qu'on garde
+    tout = repr(articles)
+    assert "TEXTE INTEGRAL" not in tout
+    assert "Auteur" not in tout
 
 
-def test_read_all_sources_returns_dict():
-    """test_read_all_sources_returns_dict"""
-    result = read_all_sources()
-    assert isinstance(result, dict)
-    assert len(result) > 0
+def test_truncate_et_source_id():
+    assert truncate("court") == "court"
+    assert len(truncate("mot " * 100)) <= EXTRAIT_MAX
+    assert source_id("L'Est Républicain") == "l-est-republicain"
+    assert canonical_url("HTTPS://A.fr/x?xtor=RSS-1#f") == "https://a.fr/x"

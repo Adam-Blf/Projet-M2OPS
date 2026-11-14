@@ -1,171 +1,114 @@
-"""Module de lecture de sources de presse et production de JSON.
+"""Lecture de sources.csv et parsing des flux RSS/Atom.
 
-Ce module lit les flux RSS/Atom des sources de presse listées dans sources.csv,
-parse les articles et produit un fichier JSON structuré contenant :
-- titre
-- extrait court
-- lien
-- date
-- titre de presse (source)
-- rubrique
+On ne garde que ce que la note de cadrage autorise : titre, extrait court
+(200 caracteres au plus), lien, date, titre de presse et rubrique. Le texte
+integral (`content:encoded`, `content`) et les auteurs sont ignores.
 """
 
 import csv
-import feedparser
-import json
-import os
-from datetime import datetime, timezone
+import html
+import re
+import unicodedata
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import List, Dict, Optional
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
-# Chemin vers le fichier sources.csv (racine du projet)
-PROJECT_ROOT = Path(__file__).parent.parent.parent
+import feedparser
+
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
 SOURCES_CSV = PROJECT_ROOT / "sources.csv"
 
-
-def load_sources(csv_path: Optional[Path] = None) -> List[Dict]:
-    """Charge la liste des sources depuis sources.csv.
-
-    Returns:
-        List de dictionnaires avec: nom, type, region, acces, conditions, notes
-    """
-    if csv_path is None:
-        csv_path = SOURCES_CSV
-
-    sources = []
-    with open(csv_path, newline="", encoding="utf-8") as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            sources.append(row)
-    return sources
+EXTRAIT_MAX = 200
+_TAG = re.compile(r"<[^>]+>")
+_SPACES = re.compile(r"\s+")
+# Parametres de suivi retires pour obtenir l'URL canonique (deduplication)
+_TRACKING = ("utm_", "xtor", "at_", "fbclid", "gclid")
 
 
-def parse_feed(url: str, timeout: int = 30) -> Optional[Dict]:
-    """Parse un flux RSS/Atom et extrait les informations d'article.
+def load_sources(csv_path: Path | None = None) -> list[dict]:
+    """Charge les sources depuis sources.csv (colonnes nom, type, region, acces...)."""
+    with open(csv_path or SOURCES_CSV, newline="", encoding="utf-8") as f:
+        return list(csv.DictReader(f))
 
-    Args:
-        url: URL du flux RSS ou Atom
-        timeout: Délai d'attente en secondes
 
-    Returns:
-        Dictionnaire avec les articles parsed ou None en cas d'échec
-    """
+def source_id(nom: str) -> str:
+    """Identifiant sans accent : "L'Est Republicain" -> "l-est-republicain"."""
+    ascii_nom = unicodedata.normalize("NFKD", nom).encode("ascii", "ignore").decode()
+    return re.sub(r"[^a-z0-9]+", "-", ascii_nom.lower()).strip("-")
+
+
+def clean_text(value: str | None) -> str:
+    """Retire les balises HTML et les entites, et compacte les espaces."""
+    if not value:
+        return ""
+    return _SPACES.sub(" ", html.unescape(_TAG.sub(" ", value))).strip()
+
+
+def truncate(text: str, max_len: int = EXTRAIT_MAX) -> str:
+    """Coupe a max_len caracteres au plus, sur une fin de mot, avec une ellipse."""
+    if len(text) <= max_len:
+        return text
+    cut = text[: max_len - 1]
+    if " " in cut:
+        cut = cut.rsplit(" ", 1)[0]
+    return cut.rstrip(" ,;:.") + "…"
+
+
+def canonical_url(url: str) -> str:
+    """URL sans fragment ni parametres de suivi, hote en minuscules."""
+    parts = urlsplit(url.strip())
+    query = [
+        (k, v)
+        for k, v in parse_qsl(parts.query, keep_blank_values=True)
+        if not k.lower().startswith(_TRACKING)
+    ]
+    return urlunsplit(
+        (parts.scheme.lower(), parts.netloc.lower(), parts.path, urlencode(query), "")
+    )
+
+
+def _entry_date(entry) -> str | None:
+    """Date de publication en ISO 8601 UTC (feedparser rend deja de l'UTC)."""
+    parsed = entry.get("published_parsed") or entry.get("updated_parsed")
+    if not parsed:
+        return None
     try:
-        feed = feedparser.parse(url, timeout=timeout)
-        if feed.bozo:
-            # Erreur de parsing, mais on retourne quand même ce qu'on a
-            pass
-
-        articles = []
-        for entry in feed.entries:
-            article = {
-                "titre": getattr(entry, "title", None),
-                "extrait": getattr(entry, "summary", None),
-                "lien": getattr(entry, "link", None),
-                "date": getattr(entry, "published_parsed", None),
-                "titre_presse": getattr(feed.feed, "title", None),
-                "rubrique": getattr(entry, "tags", [None])[0].term
-                if getattr(entry, "tags", None)
-                else None,
-            }
-            # S'assurer que la date est au format datetime
-            if article["date"]:
-                try:
-                    article["date"] = datetime(
-                        *article["date"][:6],
-                        tzinfo=timezone.utc,
-                    ).isoformat()
-                except (ValueError, TypeError):
-                    article["date"] = None
-            articles.append(article)
-
-        return {"feed_title": feed.feed.title if hasattr(feed, "feed") else None, "articles": articles}
-
-    except Exception as e:
-        print(f"Erreur lors du parsing du flux {url}: {e}")
+        return datetime(*parsed[:6], tzinfo=UTC).isoformat()
+    except (TypeError, ValueError):
         return None
 
 
-def read_source(source_info: Dict) -> List[Dict]:
-    """Lit une source spécifique et retourne ses articles.
+def parse_feed(content: bytes | str) -> dict:
+    """Parse le contenu d'un flux deja telecharge (aucun appel reseau ici).
 
-    Args:
-        source_info: Dictionnaire contenant les infos d'une source (lu de sources.csv)
-                     Doit contenir la clé 'acces' avec l'URL du flux
-
-    Returns:
-        List d'articles structurés
+    Retourne le titre du flux, l'etat `bozo` de feedparser et la liste des
+    articles qui ont au moins un titre et un lien.
     """
-    url = source_info.get("acces", "")
-    if not url:
-        return []
-
-    result = parse_feed(url)
-    if result is None:
-        return []
-
-    return result.get("articles", [])
-
-
-def read_all_sources() -> Dict[str, List[Dict]]:
-    """Lit toutes les sources enregistrées et retourne un dictionnaire.
-
-    Returns:
-        Dictionnaire mapping le nom de la source vers sa liste d'articles
-    """
-    sources = load_sources()
-    result = {}
-
-    for source in sources:
-        name = source.get("nom", "inconnu")
-        articles = read_source(source)
-        result[name] = articles
-
-    return result
-
-
-def write_json(articles: List[Dict], output_path: Path) -> None:
-    """Écrit une liste d'articles en fichier JSON.
-
-    Args:
-        articles: Liste de dictionnaires d'articles
-        output_path: Chemin du fichier de sortie
-    """
-    with open(output_path, "w", encoding="utf-8") as f:
-        json.dump(articles, f, ensure_ascii=False, indent=2)
-
-
-def main():
-    """Point d'entrée principal : lit toutes les sources et écrit le JSON."""
-    all_articles = read_all_sources()
-
-    # Output directory
-    output_dir = PROJECT_ROOT / "data"
-    output_dir.mkdir(parents=True, exist_ok=True)
-
-    # Write timestamped JSON
-    timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-    output_file = output_dir / f"edition_{timestamp}.json"
-
-    # Agréger tous les articles
-    all_items = []
-    for name, articles in all_articles.items():
-        for article in articles:
-            all_items.append(
-                {
-                    "source": name,
-                    "titre": article.get("titre"),
-                    "extrait": article.get("extrait"),
-                    "lien": article.get("lien"),
-                    "date": article.get("date"),
-                    "titre_presse": article.get("titre_presse"),
-                    "rubrique": article.get("rubrique"),
-                }
-            )
-
-    write_json(all_items, output_file)
-    print(f"Édition écrite dans {output_file} ({len(all_items)} articles)")
-
-
-if __name__ == "__main__":
-    main()
+    feed = feedparser.parse(content)
+    feed_title = clean_text(feed.feed.get("title")) or None
+    articles = []
+    for entry in feed.entries:
+        titre = clean_text(entry.get("title"))
+        lien = (entry.get("link") or "").strip()
+        if not titre or not lien:
+            continue
+        tags = entry.get("tags") or []
+        articles.append(
+            {
+                "titre": titre,
+                # `summary` seulement : jamais `content`, et toujours tronque
+                "extrait": truncate(clean_text(entry.get("summary"))) or None,
+                "lien": lien,
+                "url_canonique": canonical_url(lien),
+                "date": _entry_date(entry),
+                "titre_presse": feed_title,
+                "rubrique": clean_text(tags[0].get("term")) or None if tags else None,
+            }
+        )
+    bozo_exc = feed.get("bozo_exception")
+    return {
+        "feed_title": feed_title,
+        "bozo": bool(feed.get("bozo")),
+        "bozo_exception": str(bozo_exc) if bozo_exc else None,
+        "articles": articles,
+    }
