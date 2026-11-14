@@ -188,11 +188,16 @@ podman-compose run --rm purge
 | Domaine inexistant, URL cassée | ✅ lignes de journal en `error`, code de sortie 2, pas de trace d'erreur |
 | Base injoignable | ✅ `run_error` journalisé, code de sortie 1 |
 | Purge des fichiers (`--no-db`) | ✅ dossier brut de plus de 7 jours supprimé, `--dry-run` ne supprime rien |
-| Construction de l'image + collecte avec PostgreSQL (compose) | ⏳ pas encore testé |
-| Purge en base (`DELETE` à J+7) | ⏳ pas encore testé |
+| Image + collecte avec PostgreSQL (`podman-compose run --rm collector`, Podman 5.4) | ✅ 5/5 `ok`, **216 articles insérés**, 3,2 s ; 9 fichiers bruts, état ETag et cache robots.txt écrits |
+| 2e collecte en conteneur | ✅ La Croix en 304, **0 doublon** inséré (index unique sur `url_canonique`) |
+| Purge en conteneur (`podman-compose run --rm purge`) | ✅ `purge_end`, 0 article supprimé (rien n'a encore 7 jours) ; base : Midi Libre 100, La Croix 50, France 3 Bretagne 30, Le Dauphiné Libéré 20, Le Monde 16 |
 
-Reste à faire : tester les conteneurs avec la base, puis les `CronJob` Kubernetes (k3s) pour la
-collecte du matin et la purge.
+Remarque : avec podman-compose 1.3, `run` tente de recréer la base déjà lancée et affiche
+`the container name "m2ops_db" is already in use` ; le message est sans conséquence, la tâche
+s'exécute ensuite normalement.
+
+Reste à faire : vérifier la suppression réelle à J+7 (articles de plus de 7 jours), puis les
+`CronJob` Kubernetes (k3s) pour la collecte du matin et la purge.
 
 ## Livrables du TD 1, cadrage et bornage
 
