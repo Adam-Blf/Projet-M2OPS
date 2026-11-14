@@ -178,6 +178,44 @@ podman-compose run --rm collector     # deux fois : la 2e renvoie 304 pour La Cr
 podman-compose run --rm purge
 ```
 
+### Déploiement sur Kubernetes (k3s)
+
+En production, tout tourne dans k3s, namespace `m2ops` (dossier [`k8s/`](k8s/)) :
+
+| Objet | Rôle |
+|---|---|
+| `StatefulSet postgres` + `Service db` | Base permanente, données dans `/srv/appdata/m2ops/postgres` |
+| `CronJob collector` | Collecte tous les jours à **7 h** (Europe/Paris), 5 flux |
+| `CronJob purge` | Tous les jours à **7 h 30**, supprime ce qui a plus de **7 jours** |
+| `Secret m2ops-db` | Identifiants de la base, créé à la main depuis `.env`, jamais dans git |
+
+Fichiers bruts, état HTTP et journaux : `/srv/appdata/m2ops/data` (appartient à l'UID 1000).
+
+```bash
+# 1. Dossiers de données
+sudo mkdir -p /srv/appdata/m2ops/data /srv/appdata/m2ops/postgres
+sudo chown 1000:1000 /srv/appdata/m2ops/data
+
+# 2. Image : construite avec Podman puis importée dans k3s (containerd séparé)
+sudo podman build -t localhost/m2ops-collector:0.1 .
+sudo podman save localhost/m2ops-collector:0.1 | sudo k3s ctr images import -
+
+# 3. Namespace, secret, puis tout le reste
+kubectl create namespace m2ops
+kubectl -n m2ops create secret generic m2ops-db --from-env-file=.env
+kubectl apply -k k8s/
+
+# 4. Essai sans attendre 7 h
+kubectl -n m2ops create job --from=cronjob/collector collect-test
+kubectl -n m2ops logs -f job/collect-test
+
+# Suivi
+kubectl -n m2ops get cronjobs,jobs,pods
+```
+
+Prochaine étape : image tirée de `ghcr.io` avec `imagePullPolicy: Always` (chaque collecte
+vérifie le digest du tag `main` et ne télécharge que les couches modifiées).
+
 ### Résultats des essais (14/11/2026)
 
 | Essai | Résultat |
@@ -191,6 +229,8 @@ podman-compose run --rm purge
 | Image + collecte avec PostgreSQL (`podman-compose run --rm collector`, Podman 5.4) | ✅ 5/5 `ok`, **216 articles insérés**, 3,2 s ; 9 fichiers bruts, état ETag et cache robots.txt écrits |
 | 2e collecte en conteneur | ✅ La Croix en 304, **0 doublon** inséré (index unique sur `url_canonique`) |
 | Purge en conteneur (`podman-compose run --rm purge`) | ✅ `purge_end`, 0 article supprimé (rien n'a encore 7 jours) ; base : Midi Libre 100, La Croix 50, France 3 Bretagne 30, Le Dauphiné Libéré 20, Le Monde 16 |
+
+| Déploiement k3s (`kubectl apply -k k8s/`, k3s v1.37.2) | ✅ `postgres-0` Running ; job manuel depuis le CronJob : 5/5 `ok`, **216 articles** en base, 2,1 s ; 2e job : La Croix 304, 0 doublon ; fichiers dans `/srv/appdata/m2ops/data` |
 
 Remarque : avec podman-compose 1.3, `run` tente de recréer la base déjà lancée et affiche
 `the container name "m2ops_db" is already in use` ; le message est sans conséquence, la tâche

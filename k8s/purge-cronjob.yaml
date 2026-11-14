@@ -1,0 +1,69 @@
+# Purge quotidienne a 7 h 30 (apres la collecte) : supprime ce qui a plus de 7 jours.
+# Lancer a la main :
+#   kubectl -n m2ops create job --from=cronjob/purge purge-test
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: purge
+  labels:
+    app.kubernetes.io/name: purge
+spec:
+  schedule: "30 7 * * *"
+  timeZone: Europe/Paris
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 3600
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      activeDeadlineSeconds: 300
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: purge
+            app.kubernetes.io/part-of: m2ops
+        spec:
+          restartPolicy: Never
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: purge
+              image: localhost/m2ops-collector:0.1
+              imagePullPolicy: Never
+              args: ["python", "-m", "src.purge"]
+              envFrom:
+                - secretRef:
+                    name: m2ops-db
+              env:
+                - name: POSTGRES_HOST
+                  value: db
+                - name: RETENTION_DAYS
+                  value: "7"
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 64Mi
+                limits:
+                  memory: 128Mi
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop: ["ALL"]
+              volumeMounts:
+                - name: data
+                  mountPath: /app/data
+                - name: tmp
+                  mountPath: /tmp
+          volumes:
+            - name: data
+              hostPath:
+                path: /srv/appdata/m2ops/data
+                type: Directory
+            - name: tmp
+              emptyDir: {}

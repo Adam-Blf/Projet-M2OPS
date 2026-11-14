@@ -1,0 +1,10 @@
+# Tout appliquer : kubectl apply -k k8s/
+# (le Secret m2ops-db est cree a part, il ne doit jamais etre dans git)
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: m2ops
+resources:
+  - namespace.yaml
+  - postgres.yaml
+  - collector-cronjob.yaml
+  - purge-cronjob.yaml
