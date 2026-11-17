@@ -1,0 +1,19 @@
+# Source de donnees PostgreSQL, en lecture seule (role grafana_ro).
+# Le mot de passe vient de la variable d'environnement GRAFANA_DB_PASSWORD (secret m2ops-grafana).
+apiVersion: 1
+datasources:
+  - name: M2Ops PostgreSQL
+    uid: m2ops-pg
+    type: grafana-postgresql-datasource
+    url: db:5432
+    user: grafana_ro
+    isDefault: true
+    editable: false
+    jsonData:
+      database: m2ops
+      sslmode: disable
+      postgresVersion: 1600
+      timescaledb: false
+      maxOpenConns: 5
+    secureJsonData:
+      password: $GRAFANA_DB_PASSWORD

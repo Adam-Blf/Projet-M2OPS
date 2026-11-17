@@ -1,0 +1,12 @@
+# Charge les tableaux de bord JSON du ConfigMap grafana-dashboards.
+# Ils se modifient dans git (terraform/grafana/*.json), pas dans l'interface.
+apiVersion: 1
+providers:
+  - name: m2ops
+    folder: M2Ops
+    type: file
+    disableDeletion: true
+    allowUiUpdates: false
+    updateIntervalSeconds: 60
+    options:
+      path: /etc/grafana/dashboards

@@ -23,3 +23,10 @@ __pycache__/
 
 # Donnees produites par la collecte (brut, etat, journaux)
 data/
+
+# Terraform : providers telecharges et etat (contient les mots de passe)
+terraform/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+crash.log

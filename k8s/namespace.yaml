@@ -1,6 +1,0 @@
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: m2ops
-  labels:
-    app.kubernetes.io/part-of: m2ops

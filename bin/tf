@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Lance Terraform sur le dossier terraform/ avec les identifiants de .env.
+#   bin/tf init | plan | apply | output ...
+# - POSTGRES_DB / POSTGRES_USER / POSTGRES_PASSWORD de .env -> variables Terraform (TF_VAR_*),
+#   donc jamais ecrites dans un fichier du depot ;
+# - umask 077 : l'etat (terraform.tfstate, qui contient les mots de passe) est cree en 600.
+set -euo pipefail
+root="$(cd "$(dirname "$0")/.." && pwd)"
+
+[ -f "$root/.env" ] || { echo "Fichier .env manquant (copier .env.example)." >&2; exit 1; }
+set -a
+# shellcheck disable=SC1091
+. "$root/.env"
+set +a
+
+export TF_VAR_postgres_db="$POSTGRES_DB"
+export TF_VAR_postgres_user="$POSTGRES_USER"
+export TF_VAR_postgres_password="$POSTGRES_PASSWORD"
+
+umask 077
+exec "${TERRAFORM:-terraform}" -chdir="$root/terraform" "$@"

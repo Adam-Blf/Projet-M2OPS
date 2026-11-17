@@ -1,0 +1,324 @@
+{
+  "uid": "m2ops-articles",
+  "title": "M2Ops - Articles collectés",
+  "description": "Ce que la collecte enregistre dans articles_bruts : volumes, fraîcheur par source, derniers articles.",
+  "tags": ["m2ops", "collecte"],
+  "timezone": "Europe/Paris",
+  "editable": false,
+  "graphTooltip": 1,
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "",
+  "time": { "from": "now-7d", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "source",
+        "label": "Source",
+        "type": "query",
+        "datasource": { "type": "grafana-postgresql-datasource", "uid": "m2ops-pg" },
+        "query": "SELECT DISTINCT source FROM articles_bruts ORDER BY 1",
+        "definition": "SELECT DISTINCT source FROM articles_bruts ORDER BY 1",
+        "refresh": 1,
+        "multi": true,
+        "includeAll": true,
+        "current": { "selected": true, "text": ["All"], "value": ["$__all"] },
+        "sort": 1
+      },
+      {
+        "name": "recherche",
+        "label": "Recherche dans le titre",
+        "type": "textbox",
+        "query": "",
+        "current": { "text": "", "value": "" }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Articles en base",
+      "description": "Tous les articles conservés (purge à 7 jours).",
+      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "m2ops-pg" },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "grafana-postgresql-datasource", "uid": "m2ops-pg" },
+          "editorMode": "code",
+          "rawQuery": true,
+          "format": "table",
+          "rawSql": "SELECT count(*) AS \"Articles\" FROM articles_bruts"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "fixed", "fixedColor": "blue" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }] }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value"
+      }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Nouveaux articles aujourd'hui",
+      "description": "Insérés depuis minuit (heure de Paris).",
+      "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "m2ops-pg" },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "grafana-postgresql-datasource", "uid": "m2ops-pg" },
+          "editorMode": "code",
+          "rawQuery": true,
+          "format": "table",
+          "rawSql": "SELECT count(*) AS \"Aujourd'hui\" FROM articles_bruts WHERE collecte_le >= date_trunc('day', now() AT TIME ZONE 'Europe/Paris') AT TIME ZONE 'Europe/Paris'"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "green", "value": 1 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value"
+      }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Heures depuis la dernière insertion",
+      "description": "Rouge au-delà de 24 h : la collecte du matin n'a probablement rien inséré.",
+      "gridPos": { "x": 12, "y": 0, "w": 6, "h": 4 },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "m2ops-pg" },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "grafana-postgresql-datasource", "uid": "m2ops-pg" },
+          "editorMode": "code",
+          "rawQuery": true,
+          "format": "table",
+          "rawSql": "SELECT round((extract(epoch FROM now() - max(collecte_le)) / 3600)::numeric, 1) AS \"Heures\" FROM articles_bruts"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "h",
+          "decimals": 1,
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 24 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value"
+      }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Sources avec un article de moins de 24 h",
+      "description": "Sur les 5 sources suivies.",
+      "gridPos": { "x": 18, "y": 0, "w": 6, "h": 4 },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "m2ops-pg" },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "grafana-postgresql-datasource", "uid": "m2ops-pg" },
+          "editorMode": "code",
+          "rawQuery": true,
+          "format": "table",
+          "rawSql": "SELECT count(DISTINCT source) AS \"Sources\" FROM articles_bruts WHERE publie_le > now() - interval '24 hours'"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "max": 5,
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "orange", "value": 3 },
+              { "color": "green", "value": 5 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value"
+      }
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Nouveaux articles par jour et par source",
+      "gridPos": { "x": 0, "y": 4, "w": 14, "h": 9 },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "m2ops-pg" },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "grafana-postgresql-datasource", "uid": "m2ops-pg" },
+          "editorMode": "code",
+          "rawQuery": true,
+          "format": "time_series",
+          "rawSql": "SELECT date_trunc('day', collecte_le AT TIME ZONE 'Europe/Paris') AT TIME ZONE 'Europe/Paris' AS time, source AS metric, count(*) AS value FROM articles_bruts WHERE $__timeFilter(collecte_le) AND source IN (${source:sqlstring}) GROUP BY 1, 2 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 80,
+            "lineWidth": 1,
+            "barAlignment": 0,
+            "stacking": { "mode": "normal", "group": "A" },
+            "showPoints": "never"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      }
+    },
+    {
+      "id": 6,
+      "type": "table",
+      "title": "Fraîcheur par source",
+      "description": "Heures depuis le dernier article publié : orange après 12 h, rouge après 24 h.",
+      "gridPos": { "x": 14, "y": 4, "w": 10, "h": 9 },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "m2ops-pg" },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "grafana-postgresql-datasource", "uid": "m2ops-pg" },
+          "editorMode": "code",
+          "rawQuery": true,
+          "format": "table",
+          "rawSql": "SELECT source AS \"Source\", count(*) AS \"Articles\", max(publie_le) AS \"Dernier publié\", round((extract(epoch FROM now() - max(publie_le)) / 3600)::numeric, 1) AS \"Heures depuis\", max(collecte_le) AS \"Dernière insertion\" FROM articles_bruts GROUP BY source ORDER BY source"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Heures depuis" },
+            "properties": [
+              { "id": "custom.cellOptions", "value": { "type": "color-background" } },
+              { "id": "decimals", "value": 1 },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    { "color": "green", "value": null },
+                    { "color": "orange", "value": 12 },
+                    { "color": "red", "value": 24 }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": { "showHeader": true, "cellHeight": "sm" }
+    },
+    {
+      "id": 7,
+      "type": "table",
+      "title": "Derniers articles (500 max)",
+      "description": "Filtrés par la période, la source et la recherche en haut de la page. Cliquer sur un titre ouvre l'article chez l'éditeur.",
+      "gridPos": { "x": 0, "y": 13, "w": 24, "h": 16 },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "m2ops-pg" },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "grafana-postgresql-datasource", "uid": "m2ops-pg" },
+          "editorMode": "code",
+          "rawQuery": true,
+          "format": "table",
+          "rawSql": "SELECT publie_le AS \"Publié le\", source AS \"Source\", rubrique AS \"Rubrique\", titre AS \"Titre\", extrait AS \"Extrait\", lien AS \"Lien\", collecte_le AS \"Collecté le\" FROM articles_bruts WHERE $__timeFilter(collecte_le) AND source IN (${source:sqlstring}) AND (${recherche:sqlstring} = '' OR titre ILIKE '%' || ${recherche:sqlstring} || '%') ORDER BY publie_le DESC NULLS LAST LIMIT 500"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "custom": { "inspect": true, "filterable": true } },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Titre" },
+            "properties": [
+              { "id": "custom.width", "value": 420 },
+              {
+                "id": "links",
+                "value": [
+                  { "title": "Ouvrir l'article", "url": "${__data.fields[\"Lien\"]}", "targetBlank": true }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Publié le" },
+            "properties": [{ "id": "custom.width", "value": 160 }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Source" },
+            "properties": [{ "id": "custom.width", "value": 150 }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Rubrique" },
+            "properties": [{ "id": "custom.width", "value": 130 }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Lien" },
+            "properties": [{ "id": "custom.hidden", "value": true }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Collecté le" },
+            "properties": [{ "id": "custom.width", "value": 160 }]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "sortBy": [{ "displayName": "Publié le", "desc": true }]
+      }
+    }
+  ]
+}
