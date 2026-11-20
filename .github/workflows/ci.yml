@@ -1,24 +1,35 @@
 name: CI/CD M2Ops
 
+# Quand la CI se lance :
+#   - a chaque push sur main ou dev_emilien : lint, tests, build ET publication de l'image ;
+#   - a chaque pull request vers main : lint, tests, build (sans publication) ;
+#   - a la main, depuis l'onglet Actions de GitHub (bouton "Run workflow").
 on:
   push:
-    branches: [main]
+    branches: [main, dev_emilien]
   pull_request:
     branches: [main]
+  workflow_dispatch:
+
+# Droits du jeton automatique GITHUB_TOKEN : lire le code, ecrire dans le registre d'images.
+permissions:
+  contents: read
+  packages: write
 
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: Recuperer le code
+        uses: actions/checkout@v5
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Installer Python
+        uses: actions/setup-python@v6
         with:
           python-version: "3.12"
+          cache: pip
 
-      - name: Install dependencies
+      - name: Installer les dependances
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements-dev.txt
@@ -28,21 +39,34 @@ jobs:
           ruff check .
           flake8 src/ tests/ --max-line-length=100
 
-      - name: Run tests
-        run: |
-          python -m pytest tests/ -v
+      - name: Tests
+        run: python -m pytest tests/ -v
 
-      - name: Build Docker image
+      - name: Construire l'image
         run: |
-          docker build -t ghcr.io/adam-blf/projet-m2ops:${{ github.sha }} -t ghcr.io/adam-blf/projet-m2ops:latest .
+          # ghcr.io exige un nom en minuscules : Adam-Blf/Projet-M2OPS -> adam-blf/projet-m2ops
+          IMAGE="ghcr.io/${GITHUB_REPOSITORY,,}"
+          SHA="${GITHUB_SHA::7}"
+          DATE="$(date -u +%Y%m%d%H%M%S)"
+          # nom de branche utilisable comme tag (les / deviennent des -)
+          BRANCHE="${GITHUB_REF_NAME//\//-}"
 
-      - name: Push Docker image
-        # pas de push depuis une pull request (secrets absents, image non relue)
-        if: github.event_name == 'push'
-        run: |
-          echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u Adam-Blf --password-stdin
-          docker push ghcr.io/adam-blf/projet-m2ops:${{ github.sha }}
+          TAGS="-t $IMAGE:$SHA -t $IMAGE:$DATE-$SHA -t $IMAGE:$BRANCHE"
+          if [ "$GITHUB_REF_NAME" = "main" ]; then
+            TAGS="$TAGS -t $IMAGE:latest"
+          fi
 
-      - name: Verify tag
+          docker build $TAGS \
+            --label org.opencontainers.image.source="https://github.com/$GITHUB_REPOSITORY" \
+            --label org.opencontainers.image.revision="$GITHUB_SHA" \
+            .
+          docker image ls "$IMAGE"
+          echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
+
+      - name: Publier l'image sur ghcr.io
+        # jamais depuis une pull request : le code n'a pas encore ete relu
+        if: github.event_name != 'pull_request'
         run: |
-          echo "Image taggée : ghcr.io/adam-blf/projet-m2ops:${{ github.sha }}"
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          docker push --all-tags "$IMAGE"
+          echo "Image publiee : $IMAGE (tags : $(docker image ls "$IMAGE" --format '{{.Tag}}' | paste -sd ' '))"
